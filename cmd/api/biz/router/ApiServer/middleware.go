@@ -4,11 +4,11 @@ package ApiServer
 
 import (
 	"github.com/cloudwego/hertz/pkg/app"
+	mw "tiktok-demo/cmd/api/biz/middleware"
 )
 
 func rootMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	return mw.CommonMW()
 }
 
 func _douyinMw() []app.HandlerFunc {
@@ -22,8 +22,9 @@ func _commentMw() []app.HandlerFunc {
 }
 
 func _actionMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	return []app.HandlerFunc{
+		mw.JwtMiddleware.MiddlewareFunc(),
+	}
 }
 
 func _commentactionMw() []app.HandlerFunc {
@@ -32,8 +33,9 @@ func _commentactionMw() []app.HandlerFunc {
 }
 
 func _listMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	return []app.HandlerFunc{
+		mw.MiddlewareFuncOptional(),
+	}
 }
 
 func _commentlistMw() []app.HandlerFunc {
@@ -53,7 +55,9 @@ func _action0Mw() []app.HandlerFunc {
 
 func _favoriteactionMw() []app.HandlerFunc {
 	// your code...
-	return nil
+	return []app.HandlerFunc{
+		mw.JwtMiddleware.MiddlewareFunc(),
+	}
 }
 
 func _list0Mw() []app.HandlerFunc {
@@ -67,8 +71,9 @@ func _favoritelistMw() []app.HandlerFunc {
 }
 
 func _feedMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	return []app.HandlerFunc{
+		mw.MiddlewareFuncOptional(),
+	}
 }
 
 func _feed0Mw() []app.HandlerFunc {
@@ -77,8 +82,9 @@ func _feed0Mw() []app.HandlerFunc {
 }
 
 func _publishMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	return []app.HandlerFunc{
+		mw.MiddlewareFuncOptional(),
+	}
 }
 
 func _action1Mw() []app.HandlerFunc {
@@ -88,7 +94,9 @@ func _action1Mw() []app.HandlerFunc {
 
 func _publishactionMw() []app.HandlerFunc {
 	// your code...
-	return nil
+	return []app.HandlerFunc{
+		mw.JwtMiddleware.MiddlewareFunc(),
+	}
 }
 
 func _list1Mw() []app.HandlerFunc {
@@ -102,8 +110,10 @@ func _publishlistMw() []app.HandlerFunc {
 }
 
 func _relationMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	return []app.HandlerFunc{
+		// use jwt mw
+		mw.JwtMiddleware.MiddlewareFunc(),
+	}
 }
 
 func _action2Mw() []app.HandlerFunc {
@@ -152,8 +162,10 @@ func _userMw() []app.HandlerFunc {
 }
 
 func _getuserinfoMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	return []app.HandlerFunc{
+		// use jwt mw
+		mw.JwtMiddleware.MiddlewareFunc(),
+	}
 }
 
 func _loginMw() []app.HandlerFunc {

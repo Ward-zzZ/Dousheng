@@ -1,0 +1,4 @@
+# config of consul server
+host: '127.0.0.1'
+port: 8500
+key: 'tiktok/user_srv'

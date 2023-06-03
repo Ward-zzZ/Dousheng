@@ -1,0 +1,6 @@
+data/data/*
+data/logs/*
+output/
+tmp/
+.vscode/
+
