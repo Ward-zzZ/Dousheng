@@ -14,9 +14,9 @@ import (
 	ApiServer "tiktok-demo/cmd/api/biz/model/ApiServer"
 	"tiktok-demo/cmd/api/config"
 	"tiktok-demo/cmd/api/pkg"
-	// Globalconsts "tiktok-demo/shared/consts"
-	// "tiktok-demo/shared/kitex_gen/RelationServer"
+	Globalconsts "tiktok-demo/shared/consts"
 	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/RelationServer"
 
 	"tiktok-demo/shared/kitex_gen/UserServer"
 )
@@ -87,7 +87,7 @@ func GetUserInfo(ctx context.Context, c *app.RequestContext) {
 		resp, err := config.GlobalUserClient.GetUserInfo(ctx, &UserServer.DouyinUserRequest{
 			UserId: req.UserId,
 		})
-		if err != nil {
+		if resp.BaseResp.StatusCode != 0 {
 			hlog.Error("Rpc user get user info failed:", err)
 		}
 		u = resp.User
@@ -95,18 +95,22 @@ func GetUserInfo(ctx context.Context, c *app.RequestContext) {
 	}()
 	go func() {
 		// todo: get user info from relation service
-		// v, _ := c.Get(Globalconsts.IdentityKey)
-		// resp, err := config.GlobalRelationClient.QueryRelation(ctx, &RelationServer.DouyinQueryRelationRequest{
-		// 	UserId:   v.(*ApiServer.User).Id,
-		// 	ToUserId: req.UserId})
-		// if err != nil {
-		// 	hlog.Error("Rpc relation is follow failed:", err)
-		// }
-		// isFollow = resp.IsFollow
+		v, _ := c.Get(Globalconsts.IdentityKey)
+		resp, err := config.GlobalRelationClient.QueryRelation(ctx, &RelationServer.DouyinQueryRelationRequest{
+			UserId:   v.(*ApiServer.User).Id,
+			ToUserId: req.UserId})
+		if resp.BaseResp.StatusCode != 0 {
+			hlog.Error("Rpc relation query relation failed:", err)
+		}
+		isFollow = resp.IsFollow
 		wg.Done()
 	}()
 	wg.Wait()
 
 	// if error, return default user info
+	if u == nil {
+		pkg.SendUesrInfoResponse(c, errno.FuncErr, u, isFollow)
+		return
+	}
 	pkg.SendUesrInfoResponse(c, errno.Success, u, isFollow)
 }

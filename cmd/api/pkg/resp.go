@@ -2,9 +2,12 @@ package pkg
 
 import (
 	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+	"reflect"
 	"tiktok-demo/cmd/api/biz/model/ApiServer"
 	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/RelationServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
 )
 
@@ -38,12 +41,73 @@ func SendUesrInfoResponse(c *app.RequestContext, err error, u *UserServer.User, 
 	c.JSON(consts.StatusOK, UserResponse{
 		StatusCode: Err.ErrCode,
 		StatusMsg:  Err.ErrMsg,
-		User: &ApiServer.User{
-			Id:            u.Id,
-			Name:          u.Name,
-			FollowCount:   u.FollowCount,
-			FollowerCount: u.FollowerCount,
-			IsFollow:      isFollow,
-		},
+		User: func() *ApiServer.User {
+			if u == nil {
+				return nil
+			}
+			return &ApiServer.User{
+				Id:            u.Id,
+				Name:          u.Name,
+				FollowCount:   u.FollowCount,
+				FollowerCount: u.FollowerCount,
+				IsFollow:      isFollow,
+			}
+		}(),
 	})
+}
+
+// relation
+type RelationActionResponse struct {
+	StatusCode int32  `json:"status_code"`
+	StatusMsg  string `json:"status_msg"`
+}
+
+type RelationListResponse struct {
+	StatusCode int32                  `json:"status_code"`
+	StatusMsg  string                 `json:"status_msg"`
+	UserList   []*RelationServer.User `json:"user_list"`
+}
+
+func SendRelationActionResponse(c *app.RequestContext, resp interface{}) {
+	switch value := resp.(type) {
+	case error:
+		Err := errno.ConvertErr(value)
+		c.JSON(consts.StatusOK, RelationListResponse{
+			StatusCode: Err.ErrCode,
+			StatusMsg:  Err.ErrMsg,
+		})
+	case *RelationServer.DouyinRelationActionResponse:
+		c.JSON(consts.StatusOK, RelationListResponse{
+			StatusCode: value.BaseResp.StatusCode,
+			StatusMsg:  value.BaseResp.StatusMsg,
+		})
+	default:
+		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
+	}
+}
+
+func SendRelationListResponse(c *app.RequestContext, resp interface{}) {
+	switch value := resp.(type) {
+	case error:
+		Err := errno.ConvertErr(value)
+		c.JSON(consts.StatusOK, RelationListResponse{
+			StatusCode: Err.ErrCode,
+			StatusMsg:  Err.ErrMsg,
+			UserList:   nil,
+		})
+	case *RelationServer.DouyinRelationFollowListResponse:
+		c.JSON(consts.StatusOK, RelationListResponse{
+			StatusCode: value.BaseResp.StatusCode,
+			StatusMsg:  value.BaseResp.StatusMsg,
+			UserList:   value.UserList,
+		})
+	case *RelationServer.DouyinRelationFollowerListResponse:
+		c.JSON(consts.StatusOK, RelationListResponse{
+			StatusCode: value.BaseResp.StatusCode,
+			StatusMsg:  value.BaseResp.StatusMsg,
+			UserList:   value.UserList,
+		})
+	default:
+		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
+	}
 }
