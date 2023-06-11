@@ -7,16 +7,20 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 
-	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	ApiServer "tiktok-demo/cmd/api/biz/model/ApiServer"
-	// "github.com/cloudwego/hertz/pkg/common/hlog"
+	"tiktok-demo/cmd/api/pkg"
+
+	"github.com/cloudwego/hertz/pkg/common/hlog"
+	"github.com/cloudwego/hertz/pkg/protocol/consts"
+
 	// mw "tiktok-demo/cmd/api/biz/middleware"
-	// "tiktok-demo/cmd/api/config"
+	"tiktok-demo/cmd/api/config"
 	// "tiktok-demo/cmd/api/pkg"
-	// "tiktok-demo/shared/consts"
-	// "tiktok-demo/shared/errno"
+	Globalconsts "tiktok-demo/shared/consts"
+	"tiktok-demo/shared/errno"
+
 	// "tiktok-demo/shared/kitex_gen/CommentServer"
-	// "tiktok-demo/shared/kitex_gen/FavoriteServer"
+	"tiktok-demo/shared/kitex_gen/FavoriteServer"
 	// "tiktok-demo/shared/kitex_gen/RelationServer"
 	// "tiktok-demo/shared/kitex_gen/UserServer"
 	// "tiktok-demo/shared/kitex_gen/VideoServer"
@@ -26,6 +30,7 @@ import (
 // FavoriteAction .
 // @router /douyin/favorite/action/ [POST]
 func FavoriteAction(ctx context.Context, c *app.RequestContext) {
+	// like or unlike a video
 	var err error
 	var req ApiServer.DouyinFavoriteActionRequest
 	err = c.BindAndValidate(&req)
@@ -33,15 +38,27 @@ func FavoriteAction(ctx context.Context, c *app.RequestContext) {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
+	// get user id after jwt middleware
+	user, _ := c.Get(Globalconsts.IdentityKey)
 
-	resp := new(ApiServer.DouyinFavoriteActionResponse)
-
-	c.JSON(consts.StatusOK, resp)
+	resp, _ := config.GlobalFavoriteClient.FavoriteAction(ctx, &FavoriteServer.DouyinFavoriteActionRequest{
+		UserId:     user.(*ApiServer.User).Id,
+		VideoId:    req.VideoId,
+		ActionType: req.ActionType,
+	})
+	if resp.BaseResp.StatusCode != errno.SuccessCode {
+		respErr := errno.NewErrNo(resp.BaseResp.StatusCode, resp.BaseResp.StatusMsg)
+		hlog.Error("Rpc favorite action failed", respErr)
+		pkg.SendFavoriteActionResponse(c, respErr)
+		return
+	}
+	pkg.SendFavoriteActionResponse(c, resp)
 }
 
 // FavoriteList .
 // @router /douyin/favorite/list/ [GET]
 func FavoriteList(ctx context.Context, c *app.RequestContext) {
+	// get user's favorite list
 	var err error
 	var req ApiServer.DouyinFavoriteListRequest
 	err = c.BindAndValidate(&req)
@@ -50,7 +67,14 @@ func FavoriteList(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(ApiServer.DouyinFavoriteActionResponse)
-
-	c.JSON(consts.StatusOK, resp)
+	resp, _ := config.GlobalFavoriteClient.GetFavoriteList(ctx, &FavoriteServer.DouyinFavoriteListRequest{
+		UserId: req.UserId,
+	})
+	if resp.BaseResp.StatusCode != errno.SuccessCode {
+		respErr := errno.NewErrNo(resp.BaseResp.StatusCode, resp.BaseResp.StatusMsg)
+		hlog.Error("Rpc favorite list failed", respErr)
+		pkg.SendFavoriteListResponse(c, respErr, nil)
+		return
+	}
+	pkg.SendFavoriteListResponse(c, nil, resp.VideoList)
 }

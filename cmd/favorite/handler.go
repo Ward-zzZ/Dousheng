@@ -2,21 +2,119 @@ package main
 
 import (
 	"context"
-	FavoriteServer "tiktok-demo/shared/kitex_gen/FavoriteServer"
+	"strconv"
+	"strings"
+
+	"tiktok-demo/cmd/favorite/pkg/mq"
+	"tiktok-demo/cmd/favorite/pkg/mysql"
+	"tiktok-demo/cmd/favorite/pkg/pack"
+	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/FavoriteServer"
+	"tiktok-demo/shared/kitex_gen/VideoServer"
+
+	"github.com/cloudwego/kitex/client/callopt"
+	"github.com/cloudwego/kitex/pkg/klog"
 )
 
 // FavoriteServiceImpl implements the last service interface defined in the IDL.
-type FavoriteServiceImpl struct{}
+type FavoriteServiceImpl struct {
+	MysqlManager
+	RedisManager
+	VideoManager
+}
+
+type MysqlManager interface {
+	GetFavoriteUserIdList(videoId int64) ([]*mysql.Favorite, error)
+	GetFavoriteVideoIdList(userId int64) ([]*mysql.Favorite, error)
+	QueryFavorite(userId int64, videoId int64) (bool, error)
+	FavoriteAction(userId int64, videoId int64, isFavorite bool) error
+	InsertFavorite(userId int64, videoId int64, isFavorite bool) error
+	UpdateFavorite(userId int64, videoId int64, isFavorite bool) error
+	GetFavoriteCountByVideoId(videoId int64) (int64, error)
+}
+
+type RedisManager interface {
+	AddUserLikeList(c context.Context, uid int64, vid int64) (bool, error)
+	DelUserLikeList(c context.Context, uid int64, vid int64) (bool, error)
+	QueryUserLike(c context.Context, uid int64, vid int64) (bool, error)
+	GetUserLikeList(c context.Context, uid int64) ([]int64, error)
+	GetVideoLikeCount(c context.Context, vid int64) (int64, error)
+}
+
+type VideoManager interface {
+	GetVideoListByVideoId(ctx context.Context, Req *VideoServer.DouyinVideoListByVideoId, callOptions ...callopt.Option) (r *VideoServer.DouyinPublishListResponse, err error)
+}
 
 // FavoriteAction implements the FavoriteServiceImpl interface.
 func (s *FavoriteServiceImpl) FavoriteAction(ctx context.Context, req *FavoriteServer.DouyinFavoriteActionRequest) (resp *FavoriteServer.DouyinFavoriteActionResponse, err error) {
-	// TODO: Your code here...
+	resp = pack.BuildfavoriteActionResp(nil)
+
+	// 1. check params
+	if req.ActionType != 1 && req.ActionType != 2 {
+		resp = pack.BuildfavoriteActionResp(errno.FavoriteActionTypeErr)
+	}
+	// 2. action,using mq update mysql
+	msg := strings.Builder{}
+	msg.WriteString(strconv.FormatInt(req.UserId, 10))
+	msg.WriteString(":")
+	msg.WriteString(strconv.FormatInt(req.VideoId, 10))
+	msg.WriteString(":")
+	msg.WriteString(strconv.Itoa(int(req.ActionType)))
+	err = mq.FavoriteActor.Publish(ctx, msg.String())
+	if err != nil {
+		klog.Errorf("mq publish err:%v", err)
+		resp = pack.BuildfavoriteActionResp(errno.FavoriteActionErr)
+		return resp, nil
+	}
+	// 3. update redis
+	if req.ActionType == 1 {
+		if _, err = s.RedisManager.AddUserLikeList(ctx, req.UserId, req.VideoId); err != nil {
+			klog.Errorf("redis add user like list err:%v", err)
+		}
+	} else {
+		if _, err = s.RedisManager.DelUserLikeList(ctx, req.UserId, req.VideoId); err != nil {
+			klog.Errorf("redis del user like list err:%v", err)
+		}
+	}
+
 	return
 }
 
 // GetFavoriteList implements the FavoriteServiceImpl interface.
 func (s *FavoriteServiceImpl) GetFavoriteList(ctx context.Context, req *FavoriteServer.DouyinFavoriteListRequest) (resp *FavoriteServer.DouyinFavoriteListResponse, err error) {
-	// TODO: Your code here...
+	// 1. get user's favorite video id list
+	videoIds := make([]int64, 0)
+	// 1.1 check redis
+	ids, err := s.RedisManager.GetUserLikeList(ctx, req.UserId)
+	if err != nil || len(ids) == 0 {
+		// 1.2 check mysql
+		favList, err := s.MysqlManager.GetFavoriteVideoIdList(req.UserId)
+		if err != nil {
+			if err == errno.FavoriteVideoListNotExistErr {
+				return pack.BuildgetFavoriteListResp(errno.Success, nil), nil
+			}
+			return pack.BuildgetFavoriteListResp(errno.QueryUserLikeVideoErr, nil), nil
+		}
+		for _, v := range favList {
+			videoIds = append(videoIds, v.VideoId)
+			s.RedisManager.AddUserLikeList(ctx, req.UserId, v.VideoId)
+		}
+	} else {
+		videoIds = ids
+	}
+
+	// 2. get video list
+	videoList, err := s.VideoManager.GetVideoListByVideoId(ctx, &VideoServer.DouyinVideoListByVideoId{
+		VideoId: videoIds,
+		UserId:  req.UserId,
+	})
+	if videoList.BaseResp.StatusCode != errno.SuccessCode {
+		klog.Errorf("get video list err:%v", videoList.BaseResp)
+		return pack.BuildgetFavoriteListResp(errno.FavoriteVideoListErr, nil), nil
+	}
+	video := pack.ConvertVideos(videoList.VideoList)
+	resp = pack.BuildgetFavoriteListResp(nil, video)
+
 	return
 }
 
@@ -28,12 +126,34 @@ func (s *FavoriteServiceImpl) GetFavoriteUser(ctx context.Context, req *Favorite
 
 // GetFavoriteVideo implements the FavoriteServiceImpl interface.
 func (s *FavoriteServiceImpl) GetFavoriteVideo(ctx context.Context, req *FavoriteServer.DouyinVideoBeFavoriteRequest) (resp *FavoriteServer.DouyinVideoBeFavoriteResponse, err error) {
-	// TODO: Your code here...
+	// 1. check redis
+	count, err := s.RedisManager.GetVideoLikeCount(ctx, req.VideoId)
+	if err != nil {
+		// 2. check mysql
+		count, err = s.MysqlManager.GetFavoriteCountByVideoId(req.VideoId)
+		if err != nil {
+			klog.Errorf("get favorite count err:%v", err)
+			resp = pack.BuildfavoriteVideoQueryResp(errno.QueryFavoriteCountErr, 0)
+			return resp, nil
+		}
+	}
+	resp = pack.BuildfavoriteVideoQueryResp(nil, count)
 	return
 }
 
 // QueryUserLikeVideo implements the FavoriteServiceImpl interface.
 func (s *FavoriteServiceImpl) QueryUserLikeVideo(ctx context.Context, req *FavoriteServer.DouyinQueryFavoriteRequest) (resp *FavoriteServer.DouyinQueryFavoriteResponse, err error) {
-	// TODO: Your code here...
+	// 1. check redis
+	isFavorite, err := s.RedisManager.QueryUserLike(ctx, req.UserId, req.VideoId)
+	if err != nil {
+		// 2. check mysql
+		isFavorite, err = s.MysqlManager.QueryFavorite(req.UserId, req.VideoId)
+		if err != nil {
+			klog.Errorf("query user like video err:%v", err)
+			resp = pack.BuildQueryUserFavoriteVideoResp(errno.QueryUserLikeVideoErr, false)
+			return resp, nil
+		}
+	}
+	resp = pack.BuildQueryUserFavoriteVideoResp(nil, isFavorite)
 	return
 }

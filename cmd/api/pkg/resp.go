@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"tiktok-demo/cmd/api/biz/model/ApiServer"
 	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/FavoriteServer"
 	"tiktok-demo/shared/kitex_gen/RelationServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
 )
@@ -110,4 +111,43 @@ func SendRelationListResponse(c *app.RequestContext, resp interface{}) {
 	default:
 		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
 	}
+}
+
+// favorite
+type FavoriteListResponse struct {
+	StatusCode int32                   `json:"status_code"`
+	StatusMsg  string                  `json:"status_msg"`
+	VideoList  []*FavoriteServer.Video `json:"video_list"`
+}
+
+type FavoriteActionResponse struct {
+	StatusCode int32  `json:"status_code"`
+	StatusMsg  string `json:"status_msg"`
+}
+
+func SendFavoriteActionResponse(c *app.RequestContext, resp interface{}) {
+	switch value := resp.(type) {
+	case error:
+		Err := errno.ConvertErr(value)
+		c.JSON(consts.StatusOK, FavoriteActionResponse{
+			StatusCode: Err.ErrCode,
+			StatusMsg:  Err.ErrMsg,
+		})
+	case *FavoriteServer.DouyinFavoriteActionResponse:
+		c.JSON(consts.StatusOK, FavoriteActionResponse{
+			StatusCode: value.BaseResp.StatusCode,
+			StatusMsg:  value.BaseResp.StatusMsg,
+		})
+	default:
+		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
+	}
+}
+
+func SendFavoriteListResponse(c *app.RequestContext, err error, videoList []*FavoriteServer.Video) {
+	Err := errno.ConvertErr(err)
+	c.JSON(consts.StatusOK, FavoriteListResponse{
+		StatusCode: Err.ErrCode,
+		StatusMsg:  Err.ErrMsg,
+		VideoList:  videoList,
+	})
 }

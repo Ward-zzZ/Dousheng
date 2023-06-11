@@ -77,7 +77,8 @@ var (
 	FavoriteActionErr            = NewErrNo(FavoriteActionErrCode, "FavoriteAction failed")
 	FavoriteActionTypeErr        = NewErrNo(FavoriteActionTypeErrCode, "FavoriteActionType is wrong")
 	FavoriteVideoListErr         = NewErrNo(FavoriteVideoListErrCode, "FavoriteVideoListErrCode rpc List err")
-	QueryUserLikeVideoErr        = NewErrNo(FavoriteQueryUserLikeVideoErrCode, "FavoriteQueryUserLikeVideoErr rpc err")
+	QueryUserLikeVideoErr        = NewErrNo(FavoriteQueryUserLikeVideoErrCode, "FavoriteQueryUserLikeVideoErr err")
+	QueryFavoriteCountErr        = NewErrNo(FavoriteQueryUserLikeVideoErrCode, "FavoriteQueryUserLikeVideoErr err")
 	//comment
 	CommentActionErr  = NewErrNo(CommentActionErrCode, "Comment action failed")
 	GetCommentListErr = NewErrNo(GetCommentListErrCode, "Failed to get comment list")
