@@ -5,22 +5,17 @@ package ApiServer
 import (
 	"context"
 
-	"github.com/cloudwego/hertz/pkg/app"
-
-	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	ApiServer "tiktok-demo/cmd/api/biz/model/ApiServer"
-	// "github.com/cloudwego/hertz/pkg/common/hlog"
-	// mw "tiktok-demo/cmd/api/biz/middleware"
-	// "tiktok-demo/cmd/api/config"
-	// "tiktok-demo/cmd/api/pkg"
-	// "tiktok-demo/shared/consts"
-	// "tiktok-demo/shared/errno"
-	// "tiktok-demo/shared/kitex_gen/CommentServer"
-	// "tiktok-demo/shared/kitex_gen/FavoriteServer"
-	// "tiktok-demo/shared/kitex_gen/RelationServer"
-	// "tiktok-demo/shared/kitex_gen/UserServer"
-	// "tiktok-demo/shared/kitex_gen/VideoServer"
-	// "tiktok-demo/shared/tools"
+	"tiktok-demo/cmd/api/config"
+	"tiktok-demo/cmd/api/pkg"
+	Globalconsts "tiktok-demo/shared/consts"
+	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/CommentServer"
+	"tiktok-demo/shared/kitex_gen/RelationServer"
+
+	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
+	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
 
 // CommentAction .
@@ -34,15 +29,28 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(ApiServer.DouyinCommentActionResponse)
-
-	c.JSON(consts.StatusOK, resp)
+	user, _ := c.Get(Globalconsts.IdentityKey)
+	respRpc, _ := config.GlobalCommentClient.CommentAction(ctx, &CommentServer.DouyinCommentActionRequest{
+		UserId:      user.(*ApiServer.User).Id,
+		VideoId:     req.VideoId,
+		ActionType:  req.ActionType,
+		CommentText: req.CommentText,
+		CommentId:   req.CommentId,
+	})
+	if respRpc.BaseResp.StatusCode != errno.SuccessCode {
+		respErr := errno.NewErrNo(respRpc.BaseResp.StatusCode, respRpc.BaseResp.StatusMsg)
+		hlog.Error("Rpc comment action failed", respErr)
+		pkg.SendCommentActionResponse(c, respErr)
+		return
+	}
+	pkg.SendCommentActionResponse(c, respRpc)
 }
 
 // CommentList .
 // @router /douyin/comment/list/ [GET]
 func CommentList(ctx context.Context, c *app.RequestContext) {
 	var err error
+	var userId int64
 	var req ApiServer.DouyinCommentListRequest
 	err = c.BindAndValidate(&req)
 	if err != nil {
@@ -50,7 +58,42 @@ func CommentList(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(ApiServer.DouyinCommentListResponse)
+	user, _ := c.Get(Globalconsts.IdentityKey)
+	if user == nil {
+		// default userId when not login
+		userId = 0
+	} else {
+		userId = user.(*ApiServer.User).Id
+	}
 
-	c.JSON(consts.StatusOK, resp)
+	commentListResp, _ := config.GlobalCommentClient.CommentList(ctx, &CommentServer.DouyinCommentListRequest{
+		Token:   req.Token,
+		VideoId: req.VideoId,
+	})
+
+	if commentListResp.BaseResp.StatusCode != errno.SuccessCode {
+		respErr := errno.NewErrNo(commentListResp.BaseResp.StatusCode, commentListResp.BaseResp.StatusMsg)
+		hlog.Error("Rpc comment list failed", respErr)
+		pkg.SendCommentListResponse(c, respErr)
+		return
+	}
+
+	for _, v := range commentListResp.CommentList {
+		if userId == 0 {
+			v.User.IsFollow = false
+			continue
+		}
+		isFollow, _ := config.GlobalRelationClient.QueryRelation(ctx, &RelationServer.DouyinQueryRelationRequest{
+			UserId:   userId,
+			ToUserId: v.User.Id,
+		})
+		if isFollow.BaseResp.StatusCode != errno.SuccessCode {
+			respErr := errno.NewErrNo(isFollow.BaseResp.StatusCode, isFollow.BaseResp.StatusMsg)
+			hlog.Error("Rpc query relation failed", respErr)
+			pkg.SendCommentListResponse(c, respErr)
+			return
+		}
+		v.User.IsFollow = isFollow.IsFollow
+	}
+	pkg.SendCommentListResponse(c, commentListResp)
 }

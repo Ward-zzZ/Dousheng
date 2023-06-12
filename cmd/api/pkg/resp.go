@@ -10,6 +10,8 @@ import (
 	"tiktok-demo/shared/kitex_gen/FavoriteServer"
 	"tiktok-demo/shared/kitex_gen/RelationServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
+	// "tiktok-demo/shared/kitex_gen/VideoServer"
+	"tiktok-demo/shared/kitex_gen/CommentServer"
 )
 
 // user
@@ -150,4 +152,58 @@ func SendFavoriteListResponse(c *app.RequestContext, err error, videoList []*Fav
 		StatusMsg:  Err.ErrMsg,
 		VideoList:  videoList,
 	})
+}
+
+// comment
+
+type CommentActionResponse struct {
+	StatusCode int32                  `json:"status_code"`
+	StatusMsg  string                 `json:"status_msg"`
+	Comment    *CommentServer.Comment `json:"comment"`
+}
+
+type CommentListResponse struct {
+	StatusCode  int32                    `json:"status_code"`
+	StatusMsg   string                   `json:"status_msg"`
+	CommentList []*CommentServer.Comment `json:"comment_list"`
+}
+
+func SendCommentActionResponse(c *app.RequestContext, resp interface{}) {
+	switch value := resp.(type) {
+	case error:
+		Err := errno.ConvertErr(value)
+		c.JSON(consts.StatusOK, CommentActionResponse{
+			StatusCode: Err.ErrCode,
+			StatusMsg:  Err.ErrMsg,
+			Comment:    nil,
+		})
+	case *CommentServer.DouyinCommentActionResponse:
+		c.JSON(consts.StatusOK, CommentActionResponse{
+			StatusCode: value.BaseResp.StatusCode,
+			StatusMsg:  value.BaseResp.StatusMsg,
+			Comment:    value.Comment,
+		})
+	default:
+		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
+	}
+}
+
+func SendCommentListResponse(c *app.RequestContext, resp interface{}) {
+	switch value := resp.(type) {
+	case error:
+		Err := errno.ConvertErr(value)
+		c.JSON(consts.StatusOK, CommentListResponse{
+			StatusCode:  Err.ErrCode,
+			StatusMsg:   Err.ErrMsg,
+			CommentList: nil,
+		})
+	case *CommentServer.DouyinCommentListResponse:
+		c.JSON(consts.StatusOK, CommentListResponse{
+			StatusCode:  value.BaseResp.StatusCode,
+			StatusMsg:   value.BaseResp.StatusMsg,
+			CommentList: value.CommentList,
+		})
+	default:
+		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
+	}
 }
