@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"tiktok-demo/cmd/api/biz/model/ApiServer"
 	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/CommentServer"
 	"tiktok-demo/shared/kitex_gen/FavoriteServer"
 	"tiktok-demo/shared/kitex_gen/RelationServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
-	// "tiktok-demo/shared/kitex_gen/VideoServer"
-	"tiktok-demo/shared/kitex_gen/CommentServer"
+	"tiktok-demo/shared/kitex_gen/VideoServer"
 )
 
 // user
@@ -206,4 +206,48 @@ func SendCommentListResponse(c *app.RequestContext, resp interface{}) {
 	default:
 		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
 	}
+}
+
+// video
+type FeedResponse struct {
+	StatusCode int32                `json:"status_code"`
+	StatusMsg  string               `json:"status_msg"`
+	VideoList  []*VideoServer.Video `json:"video_list"`
+}
+
+type PublishActionResponse struct {
+	StatusCode int32  `json:"status_code"`
+	StatusMsg  string `json:"status_msg"`
+}
+
+type PublishListResponse struct {
+	StatusCode int32                `json:"status_code"`
+	StatusMsg  string               `json:"status_msg"`
+	VideoList  []*VideoServer.Video `json:"video_list"`
+}
+
+func SendFeedResponse(c *app.RequestContext, err error, videoList []*VideoServer.Video) {
+	Err := errno.ConvertErr(err)
+	c.JSON(consts.StatusOK, FeedResponse{
+		StatusCode: Err.ErrCode,
+		StatusMsg:  Err.ErrMsg,
+		VideoList:  videoList,
+	})
+}
+
+func SendPublishActionResponse(c *app.RequestContext, err error, resp interface{}) {
+	Err := errno.ConvertErr(err)
+	c.JSON(consts.StatusOK, PublishActionResponse{
+		StatusCode: Err.ErrCode,
+		StatusMsg:  Err.ErrMsg,
+	})
+}
+
+func SendPublishListResponse(c *app.RequestContext, err error, videoList []*VideoServer.Video) {
+	Err := errno.ConvertErr(err)
+	c.JSON(consts.StatusOK, PublishListResponse{
+		StatusCode: Err.ErrCode,
+		StatusMsg:  Err.ErrMsg,
+		VideoList:  videoList,
+	})
 }

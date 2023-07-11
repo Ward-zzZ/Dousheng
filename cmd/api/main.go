@@ -14,7 +14,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
-	"github.com/hertz-contrib/cors"
+	// "github.com/hertz-contrib/cors"
 	// cfg "github.com/hertz-contrib/http2/config"
 	// "github.com/hertz-contrib/http2/factory"
 	hertztracing "github.com/hertz-contrib/obs-opentelemetry/tracing"
@@ -31,7 +31,7 @@ func main() {
 	initialize.InitJwt()
 	tracer, trcCfg := hertztracing.NewServerTracer()
 	// tlsCfg := initialize.InitTLS()
-	corsCfg := initialize.InitCors()
+	// corsCfg := initialize.InitCors()
 	rpc.Init()
 	// create a new server
 	h := server.New(
@@ -49,7 +49,7 @@ func main() {
 	// tlsCfg.NextProtos = append(tlsCfg.NextProtos, "h2")
 	// use pprof&&cors&&tracing&&sentinel
 	pprof.Register(h)
-	h.Use(cors.New(corsCfg))
+	// h.Use(cors.New(corsCfg))
 	h.Use(hertztracing.ServerMiddleware(trcCfg))
 	h.Use(hertzSentinel.SentinelServerMiddleware(
 		// abort with status 429 by default

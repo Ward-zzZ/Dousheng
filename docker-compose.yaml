@@ -1,5 +1,72 @@
 version: "3.7"
+
+x-minio-common:
+  &minio-common
+  image: minio/minio
+  command: server --console-address ":9001" http://minio{1...4}/data
+  expose:
+    - "9000"
+  environment:
+    - MINIO_ACCESS_KEY=tiktok
+    - MINIO_SECRET_KEY=12344321
+  healthcheck:
+    test:
+      [
+        "CMD",
+        "curl",
+        "-f",
+        "http://localhost:9000/minio/health/live"
+      ]
+    interval: 30s
+    timeout: 20s
+    retries: 3
+
 services:
+
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./data/minio/data1:/data
+
+  minio2:
+    <<: *minio-common
+    hostname: minio2
+    ports:
+      - "9002:9001"
+    volumes:
+      - ./data/minio/data2:/data
+
+  minio3:
+    <<: *minio-common
+    hostname: minio3
+    ports:
+      - "9003:9001"
+    volumes:
+      - ./data/minio/data3:/data
+
+  minio4:
+    <<: *minio-common
+    hostname: minio4
+    ports:
+      - "9004:9001"
+    volumes:
+      - ./data/minio/data4:/data
+  # 使用nginx反向代理9000端口，在4个Minio实例间实现负载均衡,通过9001、9002、9003、9004端口访问它们的web console
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: nginx
+    volumes:
+      - ./data/configs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "9000:9000"
+    depends_on:
+      - minio1
+      - minio2
+      - minio3
+      - minio4
 
   # MySQL
   mysql:
@@ -32,8 +99,8 @@ services:
   #     - ./data/configs/minio:/root/.minio
   #     - ./data/data/minio:/data
   #   environment:
-  #     - MINIO_ACCESS_KEY=admin
-  #     - MINIO_SECRET_KEY=admin123
+      # - MINIO_ACCESS_KEY=admin
+      # - MINIO_SECRET_KEY=admin123
   #   ports:
   #     - "9000:9000"
   #     - "9001:9001"
@@ -63,15 +130,19 @@ services:
   # Collector
   otel-collector:
     image: otel/opentelemetry-collector-contrib-dev:latest
-    command: [ "--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}" ]
+    command:
+      [
+        "--config=/etc/otel-collector-config.yaml",
+        "${OTELCOL_ARGS}"
+      ]
     volumes:
       - ./data/configs/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "1888:1888"   # pprof extension
-      - "8888"   # Prometheus' metrics exposed by the collector
-      - "8889:8889"   # Prometheus exporter metrics
+      - "1888:1888" # pprof extension
+      - "8888" # Prometheus' metrics exposed by the collector
+      - "8889:8889" # Prometheus exporter metrics
       - "13133:13133" # health_check extension
-      - "4317:4317"   # OTLP gRPC receiver
+      - "4317:4317" # OTLP gRPC receiver
       - "55679" # zpages extension
     depends_on:
       - jaeger-all-in-one

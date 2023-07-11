@@ -1,12 +1,12 @@
 # config of consul server
 host: '127.0.0.1'
 port: 8500
-key: 'tiktok/comment_srv'
+key: 'tiktok/video_srv'
 
-# comment_srv 的KV配置
+# video_srv 的KV配置
 # ``` json
 # {
-#   "name": "comment_srv",
+#   "name": "video_srv",
 #   "mysql": {
 #     "host": "127.0.0.1",
 #     "port": 3306,
@@ -28,8 +28,25 @@ key: 'tiktok/comment_srv'
 #   "otel": {
 #     "endpoint": ":4317"
 #   },
+#   "minio":{
+#     "minio_url":"127.0.0.1",
+#     "minio_port":9000,
+#     "access_key_id":"tiktok",
+#     "secret_access_key":"12344321",
+#     "video_bucket":"video",
+#     "cover_bucket":"cover"
+#   },
 #   "user_srv": {
 #     "name": "user_srv"
-#   }
+#   },
+#   "favorite_srv": {
+#     "name": "favorite_srv"
+#   },
+#   "comment_srv": {
+#     "name": "comment_srv"
+#   },
+#    "relation_srv": {
+#     "name": "relation_srv"
+#    }
 # }
 # ```

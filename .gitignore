@@ -4,3 +4,9 @@ output/
 tmp/
 .vscode/
 
+/cmd/api/__debug_bin
+data/minio/data1/*
+data/minio/data2/*
+data/minio/data3/*
+data/minio/data4/*
+.idea/

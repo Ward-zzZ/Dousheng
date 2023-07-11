@@ -48,23 +48,26 @@ var (
 	ParamErr   = NewErrNo(ParamErrCode, "Wrong Parameter has been given")
 	FuncErr    = NewErrNo(FuncErrCode, "Error!")
 	MysqlErr   = NewErrNo(MysqlErrCode, "Mysql error!")
+	InternalServerErr = NewErrNo(InternalServerErrCode, "Internal server error")
+	UserNotLoginErr  = NewErrNo(UserNotLoginErrCode, "User not login")
 	// user
 	UserAlreadyExistErr      = NewErrNo(UserAlreadyExistErrCode, "User already exists")
 	UserNotExistErr          = NewErrNo(UserNotExistErrCode, "User not exists")
 	AuthorizationFailedErr   = NewErrNo(AuthorizationFailedErrCode, "Authorization failed")
 	StructConvertFailedErr   = NewErrNo(StructConvertFailedErrCode, "Struct Convert failed")
 	ChangeUserFollowCountErr = NewErrNo(ChangeUserFollowCountErrCode, "Failed to modify the follow count")
-	RelationRPCErr           = NewErrNo(RelationRPCErrCode, "Failed to use relation RPC")
+	UserRPCErr               = NewErrNo(UserRPCErrCode, "Failed to use user RPC")
 	FindUserErr              = NewErrNo(FindUserErrCode, "Failed to use relation RPC")
-	//follow
+	// relation
 	FollowActionErr    = NewErrNo(FollowActionErrCode, "Follow action failed")
 	ActionTypeErr      = NewErrNo(ActionTypeErrCode, "Wrong action-type has been given")
 	QueryFollowErr     = NewErrNo(QueryFollowErrCode, "Query relation failed")
-	UserRPCErr         = NewErrNo(UserRPCErrCode, "Failed to use user RPC")
 	GetFollowListErr   = NewErrNo(GetFollowListErrCode, "Failed to get follow list")
+	RelationRPCErr     = NewErrNo(RelationRPCErrCode, "Failed to use relation RPC")
 	GetFollowerListErr = NewErrNo(GetFollowerListErrCode, "Failed to get follower list")
 	GetFollowSetErr    = NewErrNo(GetFollowSetErrCode, "Failed to get follow set")
-	//video
+	// video
+	VideoNotExistErr 			 = NewErrNo(VideoNotExistErrCode, "Video not exists")
 	PublishActionErr         = NewErrNo(PublishActionErrCode, "Publish Action failed")
 	PublishListErr           = NewErrNo(PublishListErrCode, "Publish List failed")
 	FeedErr                  = NewErrNo(FeedErrCode, "Feed videos failed")
@@ -72,14 +75,18 @@ var (
 	VideoRpcRelationErr      = NewErrNo(VideoRpcRelationErrCode, "Video rpc relation failed")
 	VideoListNotFound        = NewErrNo(VideoListNotFoundErrCode, "Video List is empty")
 	GetVideoListByVideoIdErr = NewErrNo(GetVideoListByVideoIdErrCode, "Get Video List By Video Id Err")
-	//favorite
+	VideoContentTypeErr 		= NewErrNo(VideoContentTypeErrCode, "Video Content Type is not supported")
+	// favorite
 	FavoriteVideoListNotExistErr = NewErrNo(FavoriteVideoListNotExistErrCode, "Favorite not exist")
 	FavoriteActionErr            = NewErrNo(FavoriteActionErrCode, "FavoriteAction failed")
 	FavoriteActionTypeErr        = NewErrNo(FavoriteActionTypeErrCode, "FavoriteActionType is wrong")
 	FavoriteVideoListErr         = NewErrNo(FavoriteVideoListErrCode, "FavoriteVideoListErrCode rpc List err")
 	QueryUserLikeVideoErr        = NewErrNo(FavoriteQueryUserLikeVideoErrCode, "FavoriteQueryUserLikeVideoErr err")
 	QueryFavoriteCountErr        = NewErrNo(FavoriteQueryUserLikeVideoErrCode, "FavoriteQueryUserLikeVideoErr err")
-	//comment
-	CommentActionErr  = NewErrNo(CommentActionErrCode, "Comment action failed")
-	GetCommentListErr = NewErrNo(GetCommentListErrCode, "Failed to get comment list")
+	// comment
+	CommentActionErr     = NewErrNo(CommentActionErrCode, "Comment action failed")
+	CommentActionTypeErr = NewErrNo(CommentActionTypeErrCode, "Comment action type is wrong")
+	CommentAddErr        = NewErrNo(CommentAddErrCode, "Comment add failed")
+	CommentDelErr        = NewErrNo(CommentDelErrCode, "Comment del failed")
+	GetCommentListErr    = NewErrNo(GetCommentListErrCode, "Failed to get comment list")
 )

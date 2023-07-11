@@ -94,7 +94,6 @@ func GetUserInfo(ctx context.Context, c *app.RequestContext) {
 		wg.Done()
 	}()
 	go func() {
-		// todo: get user info from relation service
 		v, _ := c.Get(Globalconsts.IdentityKey)
 		resp, err := config.GlobalRelationClient.QueryRelation(ctx, &RelationServer.DouyinQueryRelationRequest{
 			UserId:   v.(*ApiServer.User).Id,

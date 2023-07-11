@@ -9,12 +9,12 @@ require (
 	github.com/cloudwego/fastpb v0.0.4
 	github.com/cloudwego/hertz v0.6.3
 	github.com/cloudwego/kitex v0.5.2
+	github.com/disintegration/imaging v1.6.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/protobuf v1.5.3
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/hertz-contrib/cors v0.0.0-20230423034624-2bc83a8400f0
 	github.com/hertz-contrib/gzip v0.0.1
-	github.com/hertz-contrib/http2 v0.1.7
 	github.com/hertz-contrib/jwt v1.0.2
 	github.com/hertz-contrib/limiter v0.0.0-20221008063035-ad27db7cc386
 	github.com/hertz-contrib/obs-opentelemetry/logging/logrus v0.1.1
@@ -25,8 +25,10 @@ require (
 	github.com/kitex-contrib/obs-opentelemetry v0.2.2
 	github.com/kitex-contrib/obs-opentelemetry/logging/logrus v0.0.0-20230512024524-5f5a227105f7
 	github.com/kitex-contrib/registry-consul v0.0.0-20230406075225-7d341f036654
+	github.com/minio/minio-go/v7 v7.0.58
 	github.com/spf13/viper v1.15.0
 	github.com/streadway/amqp v1.0.0
+	github.com/u2takey/ffmpeg-go v0.4.1
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/mysql v1.5.1
@@ -39,6 +41,7 @@ require (
 	github.com/andeya/goutil v1.0.0 // indirect
 	github.com/apache/thrift v0.13.0 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
+	github.com/aws/aws-sdk-go v1.38.20 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/go-tagexpr/v2 v2.9.6 // indirect
 	github.com/bytedance/gopkg v0.0.0-20230418090422-343ae5fedd5f // indirect
@@ -52,6 +55,7 @@ require (
 	github.com/cloudwego/netpoll v0.3.2 // indirect
 	github.com/cloudwego/thriftgo v0.2.9 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
@@ -74,12 +78,16 @@ require (
 	github.com/jhump/protoreflect v1.8.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/minio/md5-simd v1.1.2 // indirect
+	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -93,9 +101,10 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.15.0 // indirect
 	github.com/prometheus/procfs v0.2.0 // indirect
+	github.com/rs/xid v1.5.0 // indirect
 	github.com/savsgio/gotils v0.0.0-20220530130905-52f3993e8d6d // indirect
 	github.com/shirou/gopsutil/v3 v3.21.6 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.2 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -107,6 +116,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
+	github.com/u2takey/go-utils v0.3.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.41.1 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.16.1 // indirect
 	go.opentelemetry.io/contrib/propagators/ot v1.16.1 // indirect
@@ -123,6 +133,8 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.2.0 // indirect
+	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/image v0.0.0-20220302094943-723b81ca9867 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect

@@ -3,23 +3,21 @@
 package ApiServer
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"strconv"
 
 	"github.com/cloudwego/hertz/pkg/app"
-
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+
 	ApiServer "tiktok-demo/cmd/api/biz/model/ApiServer"
-	// "github.com/cloudwego/hertz/pkg/common/hlog"
-	// mw "tiktok-demo/cmd/api/biz/middleware"
-	// "tiktok-demo/cmd/api/config"
-	// "tiktok-demo/cmd/api/pkg"
-	// "tiktok-demo/shared/consts"
-	// "tiktok-demo/shared/errno"
-	// "tiktok-demo/shared/kitex_gen/CommentServer"
-	// "tiktok-demo/shared/kitex_gen/FavoriteServer"
-	// "tiktok-demo/shared/kitex_gen/RelationServer"
-	// "tiktok-demo/shared/kitex_gen/UserServer"
-	// "tiktok-demo/shared/kitex_gen/VideoServer"
+	"tiktok-demo/cmd/api/config"
+	"tiktok-demo/cmd/api/pkg"
+	Globalconsts "tiktok-demo/shared/consts"
+	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/VideoServer"
 	// "tiktok-demo/shared/tools"
 )
 
@@ -34,9 +32,39 @@ func Feed(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(ApiServer.DouyinFeedResponse)
+	var laststTime, userId int64
+	// 获取最近的时间并判断处理
+	lastst_time := c.Query("latest_time")
+	if len(lastst_time) != 0 {
+		if latesttime, err := strconv.Atoi(lastst_time); err != nil {
+			hlog.Error("strconv.Atoi(lastst_time) error", err)
+			pkg.SendFeedResponse(c, errno.ConvertErr(err), nil)
+			return
+		} else {
+			laststTime = int64(latesttime)
+		}
+	}
 
-	c.JSON(consts.StatusOK, resp)
+	//获取token中传来的user id
+	user, _ := c.Get(Globalconsts.IdentityKey)
+	if user == nil {
+		// default userId when not login
+		userId = 0
+	} else {
+		userId = user.(*ApiServer.User).Id
+	}
+
+	//调用feed rpc
+	videosFeedResp, _ := config.GlobalVideoClient.Feed(context.Background(), &VideoServer.DouyinFeedRequest{
+		LatestTime: laststTime,
+		UserId:     userId,
+	})
+	if videosFeedResp.BaseResp.StatusCode != errno.SuccessCode {
+		respErr := errno.NewErrNo(videosFeedResp.BaseResp.StatusCode, videosFeedResp.BaseResp.StatusMsg)
+		hlog.Error("feed rpc error", "error", respErr)
+		pkg.SendFeedResponse(c, respErr, nil)
+	}
+	pkg.SendFeedResponse(c, nil, videosFeedResp.VideoList)
 }
 
 // PublishAction .
@@ -44,15 +72,56 @@ func Feed(ctx context.Context, c *app.RequestContext) {
 func PublishAction(ctx context.Context, c *app.RequestContext) {
 	var err error
 	var req ApiServer.DouyinPublishActionRequest
-	err = c.BindAndValidate(&req)
+
+	req.Title = c.PostForm("title")
+	req.Token = c.PostForm("token")
+	//接收视频文件并处理。
+	fileHeader, err := c.Request.FormFile("data")
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		pkg.SendPublishActionResponse(c, errno.ConvertErr(err), nil)
+		return
+	}
+	file, err := fileHeader.Open()
+	if err != nil {
+		hlog.Error("fileHeader.Open() error", err)
+		pkg.SendPublishActionResponse(c, errno.ConvertErr(err), nil)
+		return
+	}
+	defer file.Close()
+
+	//copy为[]byte格式
+	buf := bytes.NewBuffer(nil)
+	_, err = io.Copy(buf, file)
+	if err != nil {
+		hlog.Error("io.Copy(buf, file) error", err)
+		pkg.SendPublishActionResponse(c, errno.ConvertErr(err), nil)
 		return
 	}
 
-	resp := new(ApiServer.DouyinPublishActionResponse)
+	//获取token中传来的user id
+	var userId int64
+	user, _ := c.Get(Globalconsts.IdentityKey)
+	if user == nil {
+		hlog.Error("user is not login")
+		pkg.SendPublishActionResponse(c, errno.UserNotLoginErr, nil)
 
-	c.JSON(consts.StatusOK, resp)
+	} else {
+		userId = user.(*ApiServer.User).Id
+	}
+
+	PublishActionResp, _ := config.GlobalVideoClient.PublishAction(context.Background(), &VideoServer.DouyinPublishActionRequest{
+		UserId: userId,
+		Title:  req.Title,
+		Token:  req.Token,
+		Data:   buf.Bytes(),
+	})
+
+	if PublishActionResp.BaseResp.StatusCode != errno.SuccessCode {
+		respErr := errno.NewErrNo(PublishActionResp.BaseResp.StatusCode, PublishActionResp.BaseResp.StatusMsg)
+		hlog.Error("PublishActionResp error", "error", respErr)
+		pkg.SendPublishActionResponse(c, respErr, nil)
+	}
+	pkg.SendPublishActionResponse(c, errno.Success, nil)
 }
 
 // PublishList .
@@ -66,7 +135,22 @@ func PublishList(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(ApiServer.DouyinPublishListResponse)
-
-	c.JSON(consts.StatusOK, resp)
+	//获取token中传来的user id
+	var userId int64
+	user, _ := c.Get(Globalconsts.IdentityKey)
+	if user == nil {
+		// default userId when not login
+		userId = 0
+	} else {
+		userId = user.(*ApiServer.User).Id
+	}
+	PublishListResp, _ := config.GlobalVideoClient.PublishList(context.Background(), &VideoServer.DouyinPublishListRequest{
+		UserId: userId,
+	})
+	if PublishListResp.BaseResp.StatusCode != errno.SuccessCode {
+		respErr := errno.NewErrNo(PublishListResp.BaseResp.StatusCode, PublishListResp.BaseResp.StatusMsg)
+		hlog.Error("PublishList rpc error", "error", respErr)
+		pkg.SendPublishListResponse(c, respErr, nil)
+	}
+	pkg.SendPublishListResponse(c, errno.Success, PublishListResp.VideoList)
 }

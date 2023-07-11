@@ -1,3 +1,32 @@
 host: '127.0.0.1'
 port: 8500
 key: 'tiktok/api_srv'
+
+# api_srv的KV配置
+# ``` json
+# {
+#   "name": "api_srv",
+#   "port": 8080,
+#   "jwt": {
+#     "secret_key": "tiktok-demo"
+#   },
+#   "otel": {
+#     "endpoint": ":4317"
+#   },
+#   "user_srv":{
+#     "name": "user_srv"
+#   },
+#   "relation_srv":{
+#     "name": "relation_srv"
+#   },
+#   "favorite_srv":{
+#     "name": "favorite_srv"
+#   },
+#   "video_srv":{
+#     "name": "video_srv"
+#   },
+#   "comment_srv":{
+#     "name": "comment_srv"
+#   }
+# }
+# ```

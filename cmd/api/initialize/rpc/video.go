@@ -38,7 +38,7 @@ func initVideo() {
 		client.WithResolver(r),                                     // service discovery
 		client.WithLoadBalancer(loadbalance.NewWeightedBalancer()), // load balance
 		client.WithMuxConnection(1),                                // multiplexing
-		client.WithMiddleware(mw.CommonMiddleware),                 // TODO: rpc info tracing,different
+		// client.WithMiddleware(mw.CommonMiddleware),                 // TODO: rpc info tracing,different
 		client.WithInstanceMW(mw.ClientMiddleware),
 		client.WithSuite(tracing.NewClientSuite()),
 		client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: config.GlobalServerConfig.VideoSrvInfo.Name}),

@@ -10,6 +10,8 @@ const (
 	ParamErrCode
 	FuncErrCode
 	MysqlErrCode
+	InternalServerErrCode
+	UserNotLoginErrCode
 )
 
 // user module error code
@@ -37,23 +39,28 @@ const (
 // comment module error code
 const (
 	CommentActionErrCode int32 = iota + 10201
+	CommentActionTypeErrCode
+	CommentAddErrCode
+	CommentDelErrCode
 	GetCommentListErrCode
 )
 
 // video module error code
 const (
-	PublishActionErrCode int32 = iota + 10201
+	PublishActionErrCode int32 = iota + 10301
+	VideoNotExistErrCode
 	PublishListErrCode
 	FeedErrCode
 	VideoRpcUserErrCode
 	VideoRpcRelationErrCode
 	VideoListNotFoundErrCode
 	GetVideoListByVideoIdErrCode
+	VideoContentTypeErrCode
 )
 
 // favorite module error code
 const (
-	FavoriteActionTypeErrCode int32 = iota + 10201
+	FavoriteActionTypeErrCode int32 = iota + 10401
 	FavoriteVideoListNotExistErrCode
 	FavoriteActionErrCode
 	FavoriteVideoListErrCode
