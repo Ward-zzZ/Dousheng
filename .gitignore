@@ -11,3 +11,4 @@ data/minio/data3/*
 data/minio/data4/*
 .idea/
 test.cpp
+deleteLog.py

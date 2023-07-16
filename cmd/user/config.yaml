@@ -2,3 +2,35 @@
 host: '127.0.0.1'
 port: 8500
 key: 'tiktok/user_srv'
+
+# user_srv 的KV配置
+# ``` json
+# {
+#   "name": "user_srv",
+#   "mysql": {
+#     "host": "127.0.0.1",
+#     "port": 3306,
+#     "user": "root",
+#     "password": "123456",
+#     "db": "tiktok",
+#     "salt": "tiktok123"
+#   },
+#   "redis": {
+#     "host": "127.0.0.1",
+#     "port": 6378,
+#     "password": "tiktok123"
+#   },
+#   "rabbitmq": {
+#     "host": "127.0.0.1",
+#     "port": 5672,
+#     "user": "tiktok",
+#     "password": "123321"
+#   },
+#   "otel": {
+#     "endpoint": ":4317"
+#   },
+#   "relation_srv": {
+#     "name": "relation_srv"
+#   }
+# }
+# ```
