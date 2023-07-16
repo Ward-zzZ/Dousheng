@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"time"
 	"strconv"
 
 	"github.com/cloudwego/hertz/pkg/app"
@@ -24,28 +25,38 @@ import (
 // Feed .
 // @router /douyin/feed/ [GET]
 func Feed(ctx context.Context, c *app.RequestContext) {
-	var err error
-	var req ApiServer.DouyinFeedRequest
-	err = c.BindAndValidate(&req)
-	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
-		return
+	// var err error
+	// var req ApiServer.DouyinFeedRequest
+	// err = c.BindAndValidate(&req)
+	// if err != nil {
+	// 	c.String(consts.StatusBadRequest, err.Error())
+	// 	return
+	// }
+
+		// token := c.Query("token")
+	latestTime := c.Query("latest_time")
+	var timestamp int64 = 0
+	if latestTime != "" {
+		timestamp, _ = strconv.ParseInt(latestTime, 10, 64)
+	} else {
+		timestamp = time.Now().UnixMilli()
 	}
 
-	var laststTime, userId int64
-	// 获取最近的时间并判断处理
-	lastst_time := c.Query("latest_time")
-	if len(lastst_time) != 0 {
-		if latesttime, err := strconv.Atoi(lastst_time); err != nil {
-			hlog.Error("strconv.Atoi(lastst_time) error", err)
-			pkg.SendFeedResponse(c, errno.ConvertErr(err), nil)
-			return
-		} else {
-			laststTime = int64(latesttime)
-		}
-	}
+	// var laststTime, userId int64
+	// // 获取最近的时间并判断处理
+	// lastst_time := c.Query("latest_time")
+	// if len(lastst_time) != 0 {
+	// 	if latesttime, err := strconv.Atoi(lastst_time); err != nil {
+	// 		hlog.Error("strconv.Atoi(lastst_time) error", err)
+	// 		pkg.SendFeedResponse(c, errno.ConvertErr(err), nil)
+	// 		return
+	// 	} else {
+	// 		laststTime = int64(latesttime)
+	// 	}
+	// }
 
 	//获取token中传来的user id
+	var userId int64
 	user, _ := c.Get(Globalconsts.IdentityKey)
 	if user == nil {
 		// default userId when not login
@@ -56,7 +67,7 @@ func Feed(ctx context.Context, c *app.RequestContext) {
 
 	//调用feed rpc
 	videosFeedResp, _ := config.GlobalVideoClient.Feed(context.Background(), &VideoServer.DouyinFeedRequest{
-		LatestTime: laststTime,
+		LatestTime: timestamp,
 		UserId:     userId,
 	})
 	if videosFeedResp.BaseResp.StatusCode != errno.SuccessCode {

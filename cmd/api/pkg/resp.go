@@ -75,12 +75,12 @@ func SendRelationActionResponse(c *app.RequestContext, resp interface{}) {
 	switch value := resp.(type) {
 	case error:
 		Err := errno.ConvertErr(value)
-		c.JSON(consts.StatusOK, RelationListResponse{
+		c.JSON(consts.StatusOK, RelationActionResponse{
 			StatusCode: Err.ErrCode,
 			StatusMsg:  Err.ErrMsg,
 		})
 	case *RelationServer.DouyinRelationActionResponse:
-		c.JSON(consts.StatusOK, RelationListResponse{
+		c.JSON(consts.StatusOK, RelationActionResponse{
 			StatusCode: value.BaseResp.StatusCode,
 			StatusMsg:  value.BaseResp.StatusMsg,
 		})

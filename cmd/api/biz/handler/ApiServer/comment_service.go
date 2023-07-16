@@ -4,6 +4,7 @@ package ApiServer
 
 import (
 	"context"
+	"strconv"
 
 	ApiServer "tiktok-demo/cmd/api/biz/model/ApiServer"
 	"tiktok-demo/cmd/api/config"
@@ -23,10 +24,49 @@ import (
 func CommentAction(ctx context.Context, c *app.RequestContext) {
 	var err error
 	var req ApiServer.DouyinCommentActionRequest
-	err = c.BindAndValidate(&req)
+	// err = c.BindAndValidate(&req)
+	// if err != nil {
+	// 	c.String(consts.StatusBadRequest, err.Error())
+	// 	return
+	// }
+
+	token := c.Query("token")
+	vid, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		respErr := errno.NewErrNo(errno.ParamErrCode, "video_id 不合法")
+		hlog.Error("param video_id is invalid", respErr)
+		pkg.SendCommentActionResponse(c, respErr)
 		return
+	}
+	actionType, err := strconv.ParseInt(c.Query("action_type"), 10, 64)
+	if err != nil || (actionType != 1 && actionType != 2) {
+		respErr := errno.NewErrNo(errno.ParamErrCode, "action_type 不合法")
+		hlog.Error("param action_type is invalid", respErr)
+		pkg.SendCommentActionResponse(c, respErr)
+		return
+	}
+	req.Token = token
+	req.VideoId = vid
+	req.ActionType = int32(actionType)
+
+	if actionType == 1 {
+		commentText := c.Query("comment_text")
+		if commentText == "" {
+			respErr := errno.NewErrNo(errno.ParamErrCode, "comment_text 不合法")
+			hlog.Error("param comment_text is invalid", respErr)
+			pkg.SendCommentActionResponse(c, respErr)
+			return
+		}
+		req.CommentText = commentText
+	} else if actionType == 2 {
+		commentID, err := strconv.ParseInt(c.Query("comment_id"), 10, 64)
+		if err != nil {
+			respErr := errno.NewErrNo(errno.ParamErrCode, "comment_id 不合法")
+			hlog.Error("param comment_id is invalid", respErr)
+			pkg.SendCommentActionResponse(c, respErr)
+			return
+		}
+		req.CommentId = commentID
 	}
 
 	user, _ := c.Get(Globalconsts.IdentityKey)

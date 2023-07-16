@@ -35,11 +35,12 @@ func Register(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// call register service
-	userRpcResp, err = config.GlobalUserClient.Register(ctx, &UserServer.DouyinUserRegisterRequest{
+	userRpcResp, _ = config.GlobalUserClient.Register(ctx, &UserServer.DouyinUserRegisterRequest{
 		Username: req.Username,
 		Password: req.Password,
 	})
-	if err != nil {
+	if userRpcResp.BaseResp.StatusCode != errno.SuccessCode {
+		err = errno.NewErrNo(userRpcResp.BaseResp.StatusCode, userRpcResp.BaseResp.StatusMsg)
 		hlog.Error("Rpc user register failed", err)
 		pkg.SendRegisterResponse(c, err, -1, "")
 		return

@@ -4,6 +4,7 @@ package ApiServer
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/cloudwego/hertz/pkg/app"
 
@@ -32,17 +33,42 @@ import (
 func RelationAction(ctx context.Context, c *app.RequestContext) {
 	var err error
 	var req ApiServer.DouyinRelationActionRequest
-	err = c.BindAndValidate(&req)
+	// err = c.BindAndValidate(&req)
+	// if err != nil {
+	// 	c.String(consts.StatusBadRequest, err.Error())
+	// 	return
+	// }
+
+		tid, err := strconv.ParseInt(c.Query("to_user_id"), 10, 64)
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		respErr := errno.NewErrNo(errno.ParamErrCode, "to_user_id 不合法")
+		hlog.Error("param to_user_id is invalid", respErr)
+		pkg.SendRelationActionResponse(c, respErr)
 		return
 	}
+	actionType, err := strconv.ParseInt(c.Query("action_type"), 10, 64)
+	if err != nil || (actionType != 1 && actionType != 2) {
+		respErr := errno.NewErrNo(errno.ParamErrCode, "action_type 不合法")
+		hlog.Error("param action_type is invalid", respErr)
+		pkg.SendRelationActionResponse(c, respErr)
+		return
+	}
+	token := c.Query("token")
+	if token == "" {
+		respErr := errno.NewErrNo(errno.ParamErrCode, "token 不合法")
+		hlog.Error("param token is invalid", respErr)
+		pkg.SendRelationActionResponse(c, respErr)
+		return
+	}
+	req.Token = token
+	req.ToUserId = tid
+	req.ActionType = int32(actionType)
 
 	// get user id after jwt middleware
-	uid, _ := c.Get(Globalconsts.IdentityKey)
+	user, _ := c.Get(Globalconsts.IdentityKey)
 	// call RPC: relation action service
 	resp, _ := config.GlobalRelationClient.RelationAction(ctx, &RelationServer.DouyinRelationActionRequest{
-		UserId:     uid.(int64),
+		UserId:     user.(*ApiServer.User).Id,
 		ToUserId:   req.ToUserId,
 		ActionType: req.ActionType,
 	})
