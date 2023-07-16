@@ -1,21 +1,151 @@
-在shared目录下执行以下命令生成Kitex的服务依赖代码
-kitex -module tiktok-demo -I  ./../idl ./../idl/UserServer.proto
-kitex -module tiktok-demo -I  ./../idl ./../idl/VideoServer.proto
-kitex -module tiktok-demo -I  ./../idl ./../idl/CommentServer.proto
-kitex -module tiktok-demo -I  ./../idl ./../idl/RelationServer.proto
-kitex -module tiktok-demo -I  ./../idl ./../idl/FavoriteServer.proto
 
-在cmd目录中对应的服务目录下执行以下命令生成对应RPC的服务端代码
-kitex -service UserService -module tiktok-demo -use tiktok-demo/shared/kitex_gen -I ./../../idl ./../../idl/UserServer.proto
-kitex -service VideoService -module tiktok-demo -use tiktok-demo/shared/kitex_gen -I ./../../idl ./../../idl/VideoServer.proto
-kitex -service CommentService -module tiktok-demo -use tiktok-demo/shared/kitex_gen -I ./../../idl ./../../idl/CommentServer.proto
-kitex -service RelationService -module tiktok-demo -use tiktok-demo/shared/kitex_gen -I ./../../idl ./../../idl/RelationServer.proto
-kitex -service FavoriteService -module tiktok-demo -use tiktok-demo/shared/kitex_gen -I ./../../idl ./../../idl/FavoriteServer.proto
 
-在cmd的api目录生成Hertz的网关代码
-hz new -idl ./../../idl/ApiServer.proto -mod tiktok-demo/cmd/api
-rm .gitignore go.mod // 删除生成的.gitignore和go.mod文件
+# Tiktok-demo 简易版抖音
 
-在项目根目录拉取并验证依赖
-go mod tidy && go mod verify
+# 一、项目介绍
+
+**基于 Hertz HTTP框架 + Kitex 微服务框架实现的一个简易版抖音服务端**
+
+**项目具体接口文档：**[简易版抖音项目方案说明](https://bytedance.feishu.cn/docs/doccnKrCsU5Iac6eftnFBdsXTof#)，[API文档](https://apifox.com/apidoc/shared-09d88f32-0b6c-4157-9d07-a36d32d7a75c/api-50707521)
+
+**项目App端下载与使用说明：**[客户端APP](https://bytedance.feishu.cn/docs/doccnM9KkBAdyDhg8qaeGlIz7S7)
+
+
+
+# 二、项目实现
+
+## 2.1 项目架构
+
+### 调用关系
+
+![call_relations.png](https://s2.loli.net/2023/07/16/AN1q3rwsKR4FWbQ.png)
+
+### 系统架构
+
+考虑到功能组件升级、用户规模变动以及各功能间的负载差异不同，项目采用**微服务架构**，可根据用户规模选择**单机部署**或者**集群部署**。
+
+![image-20230716160712161](https://s2.loli.net/2023/07/16/SfNJ5HEnKz6XuDF.png)
+
+### 服务关系
+
+一个api服务，五个rpc服务
+
+1. `http-api`: 作为微服务网关对外提供http服务，接受客户端的请求并解析参数，并调用相应的RPC服务，将数据返回给客户端
+2. `user`: 负责用户的注册、登录和用户信息获取
+3. `relation`: 负责用户的关注、粉丝等功能
+4. `comment`：负责视频的评论信息
+5. `favorite`: 负责视频的点赞信息
+6. `video`: 负责视频的发布、视频列表，获取视频流等功能
+
+![image-20230716160441710](https://s2.loli.net/2023/07/16/1NpLa93mE5WVO4h.png)
+
+## 2.2 技术选型
+
+| 功能               | 实现                       |
+| ------------------ | -------------------------- |
+| HTTP 框架          | Hertz                      |
+| RPC 框架           | Kitex                      |
+| 数据库             | MySQL、Redis               |
+| ORM框架            | GORM                       |
+| 身份鉴权           | JWT                        |
+| 服务发现与配置中心 | Consul                     |
+| 消息队列           | RabbitMQ                   |
+| 服务治理           | OpenTelemetry              |
+| 链路追踪           | Jaeger、prometheus、logrus |
+| 限流熔断           | Sentinel                   |
+| 对象存储           | Minio                      |
+| 反向代理与负载均衡 | Nginx                      |
+| 服务部署           | Docker                     |
+
+## 2.3 数据库设计
+
+![image-20230716165725185](https://s2.loli.net/2023/07/16/IUrnzPc8yogiD91.png)
+
+## 2.4 项目优化
+
+### 场景和安全优化
+
+1. **限流熔断：**利用sentinel流量治理组件，保障服务的稳定性
+
+2. **身份鉴权：**利用JWT在Api处进行鉴权，对于发布视频、点赞评论等需要用户权限的操作，JWT进行token查验，获取用户Id。对于获取视频、查看评论等操作可以不带token，默认Id为0
+
+3. **数据脱敏：**不明文存储密码，将用户密码结合**MD5加盐**，生成的数据摘要和盐保存起来 ，提高安全性![2023_07_16_17_08_46](https://s2.loli.net/2023/07/16/EibYBw93UQqfI7a.png)
+
+4. **雪花算法生成用户和视频的主键Id：**确保 ID 是唯一的、全局的、递增的、可扩展的和高性能的。
+
+5. **MQ实现流量削峰和异步持久化：**对于热点视频的点赞和热点人物的关注取关造成的流量高峰，使用**消息队列**进行流量削锋，减轻数据库压力。当出现取关或者关注动作时，发送请求给对应的消息队列，异步完成数据库的读写
+
+6. **高频读优化：**对于用户信息，是否关注，是否点赞等高频读的信息，利用Redis做缓存优化，提高查询效率。
+
+7. **数据一致性：**为了解决缓存带来的数据一致性问题，在更新数据时使用**异步延时双删+缓存超时**的策略。同时，对于一些写操作比如关注，使用GORM的**事务机制**，保证”增加用户的关注数&增加被关注用户的粉丝数“，保证一致性。
+
+8. **大流量的负载均衡：**使用minio的分布式部署，并通过nginx网关实现反向代理和负载均衡
+
+9. **配置中心：**利用consul实现配置中心，相比文件配置，配置中心能够实现动态更新，分布式支持以及更高的安全性，防止配置数据如服务的地址与端口直接暴露在GitHub仓库中![2023_07_16_20_43_53](https://s2.loli.net/2023/07/16/sMkXqihYayI6WJD.png)
+
+10. **ffmpeg-go截取视频封面：**采用了ffmpeg-go工具库，获取视频的封面。同时，为了提高响应数据，开启协程上传视频封面
+
+
+
+### 实现优化
+
+1. **并行请求：**对于一些请求，比如查询用户信息，获取视频流等信息，需要调用多个RPC模块。这里采用了go协程同步进行，提高效率。
+2. **错误处理：**实现了完整的错误码（share/errno），对业务出现的错误进行分类和提示
+3. **Docker一键部署环境：**使用了Docker Compose对需要的环境进行部署，使得服务的管理更为简单便捷，并具有可移植性。
+
+
+
+# 三、快速部署
+
+1. 生成环境：`docker-compose up -d`
+
+2. 拉取依赖：`go mod tidy`
+
+3. 填写consul的K/V键值，模板在config.yaml
+
+4. 启动Api：
+
+   ```bash
+   cd ./cmd/api
+   sh build.sh
+   ./output/bin/api
+   ```
+
+5. 启动五个RPC服务：
+
+   ```bash
+   cd ./cmd/user
+   sh build.sh
+   sh output/bootstrap.sh
+   ```
+
+# 四、测试结果
+
+## 4.1功能测试
+
+待完善
+
+<img src="https://s2.loli.net/2023/07/16/8RXbK7nNcOWEyiA.jpg" alt="eaf3daac62700e8c15e8a6e2142cb83" style="zoom: 25%;" />
+
+<img src="https://s2.loli.net/2023/07/16/egoj7xSFAMz2NLV.jpg" alt="03d5c228cea65bf2262f979c03ffa9e" style="zoom:25%;" />
+
+## 4.2压力测试
+
+todo
+
+# 五、项目总结与反思
+
+## 5.1 目前仍存在的问题
+
+1. 尚未对接口进行单元测试和基准测试
+2. 缓存和消息队列的使用不成熟
+3. 项目使用一个数据库，可以做分库分表设计
+
+## 5.2 已识别出的优化项
+
+1. 大V和热门视频的缓存设计使用延时双删会降低缓存命中率，可以使用更新缓存并定时同步数据库的方案
+2. 对于点赞数等高频读数据，并不要求非常强的数据一致性，缓存命中率可能更重要。可以采用更新数据库+更新缓存的方法。同时，固定过期时间可以改为随机时间，避免缓存雪崩等情况
+3. 优化代码架构，封装公共代码
+4. 可以进行压力测试，找到项目的优化目标
+5. 使用`crypto/tls`，将http改为https，提升安全性
 
