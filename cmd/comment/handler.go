@@ -128,6 +128,10 @@ func (s *CommentServiceImpl) CommentList(ctx context.Context, req *CommentServer
 
 	// 3. get user info from user service
 	userInfos, err := s.UserManager.MGetUserInfo(ctx, &UserServer.DouyinMUserRequest{UserId: userIDs})
+	if err !=nil{
+		klog.Errorf("GetUserInfo err:%v", err)
+		return pack.BuildCommentListResp(errno.UserRPCErr, nil), nil
+	}
 	if userInfos.BaseResp.StatusCode != errno.SuccessCode {
 		klog.Errorf("GetUserInfo err:%v", err)
 		return pack.BuildCommentListResp(errno.UserRPCErr, nil), nil

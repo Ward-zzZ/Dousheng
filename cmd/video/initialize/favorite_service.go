@@ -27,21 +27,21 @@ func InitFavorite() {
 	}
 	// init opentelemetry provider
 	provider.NewOpenTelemetryProvider(
-		provider.WithServiceName(config.GlobalServerConfig.RelationSrvInfo.Name),
+		provider.WithServiceName(config.GlobalServerConfig.FavoriteSrvInfo.Name),
 		provider.WithExportEndpoint(config.GlobalServerConfig.OtelInfo.EndPoint),
 		provider.WithInsecure(),
 	)
 
 	// create a new client
 	c, err := favoriteservice.NewClient(
-		config.GlobalServerConfig.RelationSrvInfo.Name,
+		config.GlobalServerConfig.FavoriteSrvInfo.Name,
 		client.WithResolver(r),                                     // service discovery
 		client.WithLoadBalancer(loadbalance.NewWeightedBalancer()), // load balance
 		client.WithMuxConnection(1),                                // multiplexing
 		client.WithMiddleware(mw.CommonMiddleware),                 // rpc info tracing
 		client.WithInstanceMW(mw.ClientMiddleware),
 		client.WithSuite(tracing.NewClientSuite()),
-		client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: config.GlobalServerConfig.RelationSrvInfo.Name}),
+		client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: config.GlobalServerConfig.FavoriteSrvInfo.Name}),
 	)
 	if err != nil {
 		klog.Fatalf("ERROR: cannot init client: %v\n", err)

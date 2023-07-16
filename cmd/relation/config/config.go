@@ -39,7 +39,7 @@ type ServerConfig struct {
 	RedisInfo    RedisConfig    `mapstructure:"redis" json:"redis"`
 	RabbitMqInfo RabbitMqConfig `mapstructure:"rabbitmq" json:"rabbitmq"`
 	OtelInfo     OtelConfig     `mapstructure:"otel" json:"otel"`
-	UserSrvInfo  UserSrvConfig  `mapstructure:"User_srv" json:"User_srv"`
+	UserSrvInfo  UserSrvConfig  `mapstructure:"user_srv" json:"user_srv"`
 }
 
 type UserSrvConfig struct {

@@ -120,7 +120,7 @@ func Video2VideoServer(v *mysql.Video, userId int64) *VideoServer.Video {
 }
 
 func GetVideoInfo(ctx context.Context, v *mysql.Video, userId int64) (author *UserServer.User, isFol bool, comCount int64, favCount int64, isFav bool) {
-	klog.Infof("userId: %v", userId)
+	klog.Infof("GetVideoInfo start")
 	// 开启 goroutine 并发调用RPC获取视频信息
 	var wg sync.WaitGroup
 	wg.Add(5)
@@ -128,9 +128,12 @@ func GetVideoInfo(ctx context.Context, v *mysql.Video, userId int64) (author *Us
 	// 获取作者信息
 	go func() {
 		var resp *UserServer.DouyinUserResponse
-		resp, _ = config.UserClient.GetUserInfo(ctx, &UserServer.DouyinUserRequest{
+		resp, err = config.UserClient.GetUserInfo(ctx, &UserServer.DouyinUserRequest{
 			UserId: v.AuthorId,
 		})
+		if resp == nil {
+			klog.Infof("GetUserInfo failed with %s in %v", err.Error(), v.AuthorId)
+		}
 		if resp.BaseResp.StatusCode != 0 {
 			klog.Infof("GetUserInfo failed with %s in %v", resp.BaseResp.StatusMsg, v.AuthorId)
 		} else {
@@ -145,10 +148,13 @@ func GetVideoInfo(ctx context.Context, v *mysql.Video, userId int64) (author *Us
 			isFol = false
 		} else {
 			var resp *RelationServer.DouyinQueryRelationResponse
-			resp, _ = config.RelationClient.QueryRelation(ctx, &RelationServer.DouyinQueryRelationRequest{
+			resp, err = config.RelationClient.QueryRelation(ctx, &RelationServer.DouyinQueryRelationRequest{
 				UserId:   userId,
 				ToUserId: v.AuthorId,
 			})
+			if resp == nil {
+				klog.Infof("QueryRelation failed with %s in %v", err.Error(), userId)
+			}
 			if resp.BaseResp.StatusCode != 0 {
 				klog.Infof("QueryRelation failed with %s in %v", err.Error(), userId)
 			} else {
@@ -160,9 +166,12 @@ func GetVideoInfo(ctx context.Context, v *mysql.Video, userId int64) (author *Us
 	// 查询视频评论数
 	go func() {
 		var resp *CommentServer.DouyinCommentListResponse
-		resp, _ = config.CommentClient.CommentList(ctx, &CommentServer.DouyinCommentListRequest{
+		resp, err = config.CommentClient.CommentList(ctx, &CommentServer.DouyinCommentListRequest{
 			VideoId: int64(v.ID),
 		})
+		if resp == nil {
+			klog.Infof("GetCommentList failed with %s in %v", err.Error(), v.ID)
+		}
 		if resp.BaseResp.StatusCode != 0 {
 			klog.Infof("GetCommentList failed with %s in %v", resp.BaseResp.StatusMsg, v.ID)
 		}
@@ -172,9 +181,12 @@ func GetVideoInfo(ctx context.Context, v *mysql.Video, userId int64) (author *Us
 	// 查询视频点赞数
 	go func() {
 		var resp *FavoriteServer.DouyinVideoBeFavoriteResponse
-		resp, _ = config.FavoriteClient.GetFavoriteVideo(ctx, &FavoriteServer.DouyinVideoBeFavoriteRequest{
+		resp, err = config.FavoriteClient.GetFavoriteVideo(ctx, &FavoriteServer.DouyinVideoBeFavoriteRequest{
 			VideoId: int64(v.ID),
 		})
+		if resp == nil {
+			klog.Infof("GetFavoriteVideo failed with %s in %v", err.Error(), v.ID)
+		}
 		if resp.BaseResp.StatusCode != 0 {
 			klog.Infof("GetFavoriteVideo failed with %s in %v", resp.BaseResp.StatusMsg, v.ID)
 		} else {
@@ -184,11 +196,14 @@ func GetVideoInfo(ctx context.Context, v *mysql.Video, userId int64) (author *Us
 	}()
 	// 查询用户是否点赞视频
 	go func() {
-		var resp *FavoriteServer.DouyinQueryFavoriteResponse
-		resp, _ = config.FavoriteClient.QueryUserLikeVideo(ctx, &FavoriteServer.DouyinQueryFavoriteRequest{
+		// var resp *FavoriteServer.DouyinQueryFavoriteResponse
+		resp, err := config.FavoriteClient.QueryUserLikeVideo(ctx, &FavoriteServer.DouyinQueryFavoriteRequest{
 			UserId:  userId,
 			VideoId: int64(v.ID),
 		})
+		if resp == nil {
+			klog.Infof("QueryUserLikeVideo failed with %s in %v", err.Error(), userId)
+		}
 		if resp.BaseResp.StatusCode != 0 {
 			klog.Infof("QueryUserLikeVideo failed with %s in %v", resp.BaseResp.StatusMsg, userId)
 		} else {

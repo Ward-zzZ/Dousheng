@@ -158,7 +158,7 @@ func (s *UserServiceImpl) GetUserInfo(ctx context.Context, req *UserServer.Douyi
 func (s *UserServiceImpl) MGetUserInfo(ctx context.Context, req *UserServer.DouyinMUserRequest) (resp *UserServer.DouyinMUserResponse, err error) {
 	resp = new(UserServer.DouyinMUserResponse)
 	var u []*UserServer.User
-	var singReq *UserServer.DouyinUserRequest
+	singReq := new(UserServer.DouyinUserRequest)
 	for _, id := range req.UserId {
 		singReq.UserId = id
 		userInfo, err := s.GetUserInfo(ctx, singReq)

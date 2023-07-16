@@ -78,10 +78,11 @@ func (s *RelationServiceImpl) RelationAction(ctx context.Context, req *RelationS
 
 	// 2.2 Second: mysql add/del follow,,using delayed double deletion
 	msg := strings.Builder{}
-	msg.WriteString(strconv.Itoa(int(req.UserId)))
+	msg.WriteString(strconv.FormatInt(req.UserId, 10))
 	msg.WriteString(":")
-	msg.WriteString(strconv.Itoa(int(req.ToUserId)))
+	msg.WriteString(strconv.FormatInt(req.ToUserId, 10))
 	if req.ActionType == 1 {
+		// todo:延时双删
 		s.RedisManager.UnFollow(ctx, req.UserId, req.ToUserId)
 		err = mq.AddActor.Publish(ctx, msg.String())
 		time.Sleep(consts.SleepTime)
@@ -128,11 +129,11 @@ func (s *RelationServiceImpl) MGetRelationFollowList(ctx context.Context, req *R
 		return pack.BuildgetFollowListResp(errno.Success, nil), nil
 	}
 	// 3. rpc user service get user info
-	UserRPCResp, err := s.UserManager.MGetUserInfo(ctx, &UserServer.DouyinMUserRequest{
+	UserRPCResp, _ := s.UserManager.MGetUserInfo(ctx, &UserServer.DouyinMUserRequest{
 		UserId: followIDs,
 	})
-	if err != nil {
-		klog.Errorf("UserRPC MGetUserInfo err:%v", err)
+	if UserRPCResp.BaseResp.StatusCode != errno.SuccessCode {
+		klog.Errorf("UserRPC MGetUserInfo err:%v", UserRPCResp.BaseResp)
 		return pack.BuildgetFollowListResp(errno.UserRPCErr, nil), nil
 	}
 	// 4. pack response
@@ -188,8 +189,8 @@ func (s *RelationServiceImpl) MGetUserRelationFollowerList(ctx context.Context, 
 		UsersRPCResp, err = s.UserManager.MGetUserInfo(ctx, &UserServer.DouyinMUserRequest{
 			UserId: followerIDs,
 		})
-		if err != nil {
-			klog.Errorf(" UserRPC MGetUserInfo err:%v", err)
+		if UsersRPCResp.BaseResp.StatusCode != 0 {
+			klog.Errorf("UserRPC MGetUserInfo err:%v", UsersRPCResp.BaseResp.StatusMsg)
 		}
 		wg.Done()
 	}()

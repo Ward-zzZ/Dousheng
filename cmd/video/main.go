@@ -28,6 +28,12 @@ func main() {
 	r, info := initialize.InitRegistry(Port)
 	db := initialize.InitDB()
 	minioClient := initialize.InitMinio()
+
+	initialize.InitRelation()
+	initialize.InitComment()
+	initialize.InitUser()
+	initialize.InitFavorite()
+
 	p := provider.NewOpenTelemetryProvider(
 		provider.WithServiceName(config.GlobalServerConfig.Name),
 		provider.WithExportEndpoint(config.GlobalServerConfig.OtelInfo.EndPoint),
