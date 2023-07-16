@@ -5,10 +5,10 @@ go 1.20
 require (
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/bytedance/sonic v1.8.3
+	github.com/bytedance/sonic v1.8.8
 	github.com/cloudwego/fastpb v0.0.4
 	github.com/cloudwego/hertz v0.6.3
-	github.com/cloudwego/kitex v0.5.2
+	github.com/cloudwego/kitex v0.6.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/protobuf v1.5.3
@@ -44,16 +44,17 @@ require (
 	github.com/aws/aws-sdk-go v1.38.20 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/go-tagexpr/v2 v2.9.6 // indirect
-	github.com/bytedance/gopkg v0.0.0-20230418090422-343ae5fedd5f // indirect
+	github.com/bytedance/gopkg v0.0.0-20230531144706-a12972768317 // indirect
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/chenzhuoyu/iasm v0.0.0-20230222070914-0b1b64b0e762 // indirect
 	github.com/choleraehyq/pid v0.0.16 // indirect
+	github.com/cloudwego/configmanager v0.2.0 // indirect
 	github.com/cloudwego/frugal v0.1.6 // indirect
-	github.com/cloudwego/netpoll v0.3.2 // indirect
-	github.com/cloudwego/thriftgo v0.2.9 // indirect
+	github.com/cloudwego/netpoll v0.4.0 // indirect
+	github.com/cloudwego/thriftgo v0.2.11 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect

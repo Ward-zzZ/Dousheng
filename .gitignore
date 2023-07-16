@@ -10,3 +10,4 @@ data/minio/data2/*
 data/minio/data3/*
 data/minio/data4/*
 .idea/
+test.cpp

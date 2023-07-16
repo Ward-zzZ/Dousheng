@@ -41,6 +41,7 @@ func main() {
 		server.WithHostPorts(fmt.Sprintf(":%d", config.GlobalServerConfig.Port)),
 		server.WithRegistry(r, info),
 		server.WithHandleMethodNotAllowed(true),
+		server.WithMaxRequestBodySize(1024*1024*1024),
 	)
 	// add http2 protocol
 	// h.AddProtocol("h2", factory.NewServerFactory(
