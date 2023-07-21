@@ -105,11 +105,12 @@ func (s *VideoSrvImpl) PublishAction(ctx context.Context, req *VideoServer.Douyi
 	}
 
 	// 获取视频URL
-	videoUrl := "http://" + config.GlobalServerConfig.MinioInfo.MinioURL + ":9000/" + s.MinioManager.VideosBucket + "/" + videoName
+	videoUrl := "http://" + config.GlobalServerConfig.MinioInfo.MinioURL + ":" + config.GlobalServerConfig.MinioInfo.MinioPort + "/" + s.MinioManager.VideosBucket + "/" + videoName
 
 	// 封面图片
 	coverName := strconv.Itoa(int(videoId)) + ".jpg"
-	coverData, err := tools.GetVideoCover(videoUrl)
+	localVideoPath := "http://127.0.0.1:9000/" + s.MinioManager.VideosBucket + "/" + videoName
+	coverData, err := tools.GetVideoCover(localVideoPath)
 	if err != nil {
 		klog.Error("videoId %d get cover error", videoId, err)
 		return pack.BuildPublishActionResp(errno.PublishActionErr), nil
@@ -120,7 +121,7 @@ func (s *VideoSrvImpl) PublishAction(ctx context.Context, req *VideoServer.Douyi
 		klog.Error("videoId %d upload cover to minio error", videoId, err)
 		return pack.BuildPublishActionResp(errno.PublishActionErr), nil
 	}
-	coverUrl := "http://" + config.GlobalServerConfig.MinioInfo.MinioURL + ":9000/" + s.MinioManager.CoverBucket + "/" + coverName
+	coverUrl := "http://" + config.GlobalServerConfig.MinioInfo.MinioURL + ":" + config.GlobalServerConfig.MinioInfo.MinioPort + "/" + s.MinioManager.CoverBucket + "/" + coverName
 	// 视频信息入库
 	videoModel := &mysql.Video{
 		Model: gorm.Model{

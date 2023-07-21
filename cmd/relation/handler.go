@@ -62,7 +62,7 @@ func (s *RelationServiceImpl) RelationAction(ctx context.Context, req *RelationS
 	if req.UserId == req.ToUserId {
 		return resp, nil
 	}
-
+// todo ：是否已经关注
 	// 2. action/undo action
 	// 2.1 First: rpc user service change follow count
 	UserRPCResp, _ := s.UserManager.ChangeUserFollowCount(ctx, &UserServer.DouyinChangeUserFollowRequest{
@@ -151,7 +151,7 @@ func (s *RelationServiceImpl) MGetRelationFollowList(ctx context.Context, req *R
 		klog.Errorf("MGetRelationFollowList len(followUsers) != len(UserRPCResp.Users)")
 		return pack.BuildgetFollowListResp(errno.StructConvertFailedErr, nil), nil
 	}
-	return pack.BuildgetFollowListResp(errno.Success, followUsers), nil
+	return pack.BuildgetFollowListResp(nil, followUsers), nil
 }
 
 // MGetUserRelationFollowerList implements the RelationServiceImpl interface.
@@ -227,7 +227,7 @@ func (s *RelationServiceImpl) MGetUserRelationFollowerList(ctx context.Context, 
 		klog.Errorf("MGetUserRelationFollowerList len(followerUsers) != len(UsersRPCResp.Users)")
 		return pack.BuildgetFollowerListResp(errno.StructConvertFailedErr, nil), nil
 	}
-	return pack.BuildgetFollowerListResp(errno.Success, followerUsers), nil
+	return pack.BuildgetFollowerListResp(nil, followerUsers), nil
 }
 
 // QueryRelation implements the RelationServiceImpl interface.

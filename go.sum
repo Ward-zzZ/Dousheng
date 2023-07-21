@@ -433,6 +433,8 @@ github.com/hertz-contrib/cors v0.0.0-20230423034624-2bc83a8400f0 h1:l5i0uvP7OQ//
 github.com/hertz-contrib/cors v0.0.0-20230423034624-2bc83a8400f0/go.mod h1:VPReoq+Rvu/lZOfpp5CcX3x4mpZUc3EpSXBcVDcbvOc=
 github.com/hertz-contrib/gzip v0.0.1 h1:fPCnSZIDT4Gd8ZTuoCCJXek0opUsN89T2djdEW7Awr4=
 github.com/hertz-contrib/gzip v0.0.1/go.mod h1:Fom/vnPMLA3UJ/P8fsZO8izjWG82m53BGO48lW1U1l8=
+github.com/hertz-contrib/http2 v0.1.8 h1:kjfCGkUxJZHgfPsnRjx1FLJBG55KvtvSQD214guBQLw=
+github.com/hertz-contrib/http2 v0.1.8/go.mod h1:m42hrl8fiTwE4p8c7JdRUZpkePEthvV89q3elL2GeD0=
 github.com/hertz-contrib/jwt v1.0.2 h1:sAW3wqgBDsbPKr5JWJRObY61jg1NqYkUCg+o8UXLsaI=
 github.com/hertz-contrib/jwt v1.0.2/go.mod h1:3zUSK+44dcw/9z/89JZ+mA0FoyhmVN7Hx+f46ucVV4I=
 github.com/hertz-contrib/limiter v0.0.0-20221008063035-ad27db7cc386 h1:2eA9mfuQXp5Q3iw/6eRHSauGXdgwoieo1M+n/Prr3sw=

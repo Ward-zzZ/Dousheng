@@ -100,7 +100,7 @@ func Video2VideoServerList(vs []*mysql.Video, userId int64) []*VideoServer.Video
 }
 
 func Video2VideoServer(v *mysql.Video, userId int64) *VideoServer.Video {
-	author, isFol, FavoriteCount, CommentCount, isFav := GetVideoInfo(context.Background(), v, userId)
+	author, isFol, CommentCount, FavoriteCount, isFav := GetVideoInfo(context.Background(), v, userId)
 	return &VideoServer.Video{
 		Id: int64(v.ID),
 		Author: &VideoServer.User{

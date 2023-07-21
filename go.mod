@@ -15,6 +15,7 @@ require (
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/hertz-contrib/cors v0.0.0-20230423034624-2bc83a8400f0
 	github.com/hertz-contrib/gzip v0.0.1
+	github.com/hertz-contrib/http2 v0.1.8
 	github.com/hertz-contrib/jwt v1.0.2
 	github.com/hertz-contrib/limiter v0.0.0-20221008063035-ad27db7cc386
 	github.com/hertz-contrib/obs-opentelemetry/logging/logrus v0.1.1

@@ -105,7 +105,7 @@ func (s *CommentServiceImpl) CommentList(ctx context.Context, req *CommentServer
 				Content: commentInfo["content"],
 				Model: gorm.Model{
 					ID:        uint(id),
-					CreatedAt: time.Unix(0, int64(timestamp)),
+					CreatedAt: time.Unix(timestamp, 0),
 				},
 			})
 		}
