@@ -9,6 +9,7 @@ import (
 	"tiktok-demo/shared/errno"
 	"tiktok-demo/shared/kitex_gen/CommentServer"
 	"tiktok-demo/shared/kitex_gen/FavoriteServer"
+	"tiktok-demo/shared/kitex_gen/MessageServer"
 	"tiktok-demo/shared/kitex_gen/RelationServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
 	"tiktok-demo/shared/kitex_gen/VideoServer"
@@ -71,6 +72,12 @@ type RelationListResponse struct {
 	UserList   []*RelationServer.User `json:"user_list"`
 }
 
+type FriendListResponse struct {
+	StatusCode int32                        `json:"status_code"`
+	StatusMsg  string                       `json:"status_msg"`
+	UserList   []*RelationServer.FriendUser `json:"user_list"`
+}
+
 func SendRelationActionResponse(c *app.RequestContext, resp interface{}) {
 	switch value := resp.(type) {
 	case error:
@@ -106,6 +113,26 @@ func SendRelationListResponse(c *app.RequestContext, resp interface{}) {
 		})
 	case *RelationServer.DouyinRelationFollowerListResponse:
 		c.JSON(consts.StatusOK, RelationListResponse{
+			StatusCode: value.BaseResp.StatusCode,
+			StatusMsg:  value.BaseResp.StatusMsg,
+			UserList:   value.UserList,
+		})
+	default:
+		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
+	}
+}
+
+func SendFriendListResponse(c *app.RequestContext, resp interface{} /*, user *UserServer.DouyinMUserResponse, msg *MessageServer.DouyinMessageLatestMsgResponse*/) {
+	switch value := resp.(type) {
+	case error:
+		Err := errno.ConvertErr(value)
+		c.JSON(consts.StatusOK, FriendListResponse{
+			StatusCode: Err.ErrCode,
+			StatusMsg:  Err.ErrMsg,
+			UserList:   nil,
+		})
+	case *RelationServer.DouyinRelationFriendListResponse:
+		c.JSON(consts.StatusOK, FriendListResponse{
 			StatusCode: value.BaseResp.StatusCode,
 			StatusMsg:  value.BaseResp.StatusMsg,
 			UserList:   value.UserList,
@@ -250,4 +277,54 @@ func SendPublishListResponse(c *app.RequestContext, err error, videoList []*Vide
 		StatusMsg:  Err.ErrMsg,
 		VideoList:  videoList,
 	})
+}
+
+// message
+type MessageChatResponse struct {
+	StatusCode  int32                        `json:"status_code"`
+	StatusMsg   string                       `json:"status_msg"`
+	MessageList []*MessageServer.ChatMessage `json:"message_list"`
+}
+
+type MessageActionResponse struct {
+	StatusCode int32  `json:"status_code"`
+	StatusMsg  string `json:"status_msg"`
+}
+
+func SendMessageChatResponse(c *app.RequestContext, resp interface{}) {
+	switch value := resp.(type) {
+	case error:
+		Err := errno.ConvertErr(value)
+		c.JSON(consts.StatusOK, MessageChatResponse{
+			StatusCode:  Err.ErrCode,
+			StatusMsg:   Err.ErrMsg,
+			MessageList: nil,
+		})
+	case *MessageServer.DouyinMessageChatResponse:
+		c.JSON(consts.StatusOK, MessageChatResponse{
+			StatusCode:  value.BaseResp.StatusCode,
+			StatusMsg:   value.BaseResp.StatusMsg,
+			MessageList: value.ChatList,
+		})
+	default:
+		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
+	}
+}
+
+func SendMessageActionResponse(c *app.RequestContext, resp interface{}) {
+	switch value := resp.(type) {
+	case error:
+		Err := errno.ConvertErr(value)
+		c.JSON(consts.StatusOK, MessageActionResponse{
+			StatusCode: Err.ErrCode,
+			StatusMsg:  Err.ErrMsg,
+		})
+	case *MessageServer.DouyinMessageActionResponse:
+		c.JSON(consts.StatusOK, MessageActionResponse{
+			StatusCode: value.BaseResp.StatusCode,
+			StatusMsg:  value.BaseResp.StatusMsg,
+		})
+	default:
+		hlog.Error("unknown type of response %v", reflect.TypeOf(resp))
+	}
 }

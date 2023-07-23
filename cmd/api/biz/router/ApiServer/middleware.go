@@ -187,3 +187,49 @@ func _register0Mw() []app.HandlerFunc {
 	// your code...
 	return nil
 }
+
+func _messageMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _messageactionMw() []app.HandlerFunc {
+	return []app.HandlerFunc{
+		// use jwt mw
+		mw.JwtMiddleware.MiddlewareFunc(),
+	}
+}
+
+func _chatMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _messagechatMw() []app.HandlerFunc {
+	return []app.HandlerFunc{
+		// use jwt mw
+		mw.JwtMiddleware.MiddlewareFunc(),
+	}
+}
+
+func _action3Mw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _friendMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _list4Mw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _relationfriendlistMw() []app.HandlerFunc {
+	return []app.HandlerFunc{
+		// use jwt mw
+		mw.JwtMiddleware.MiddlewareFunc(),
+	}
+}

@@ -3,9 +3,10 @@ package pack
 import (
 	"errors"
 
+	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/MessageServer"
 	"tiktok-demo/shared/kitex_gen/RelationServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
-	"tiktok-demo/shared/errno"
 )
 
 func UserInfoConvert(u *UserServer.User, isFollow bool) *RelationServer.User {
@@ -19,6 +20,30 @@ func UserInfoConvert(u *UserServer.User, isFollow bool) *RelationServer.User {
 		FollowerCount: u.FollowerCount,
 		IsFollow:      isFollow,
 	}
+}
+
+func FriendUserInfoConvert(u *UserServer.DouyinMUserResponse, f *MessageServer.DouyinMessageLatestMsgResponse) ([]*RelationServer.FriendUser, error) {
+	if u == nil || f == nil {
+		return nil, errors.New("user or msg is nil")
+	}
+	user := u.User
+	typeList := f.TypeList
+	contentList := f.ContentList
+
+	var friendUsers []*RelationServer.FriendUser
+	for i, _ := range user {
+		friendUser := &RelationServer.FriendUser{
+			Id:            user[i].Id,
+			Name:          user[i].Name,
+			FollowCount:   user[i].FollowCount,
+			FollowerCount: user[i].FollowerCount,
+			IsFollow:      true,
+			MsgType:       int64(typeList[i]),
+			Message:       contentList[i],
+		}
+		friendUsers = append(friendUsers, friendUser)
+	}
+	return friendUsers, nil
 }
 
 func relationActionResp(err errno.ErrNo) *RelationServer.DouyinRelationActionResponse {
@@ -52,6 +77,16 @@ func getFollowListResp(err errno.ErrNo, users []*RelationServer.User) *RelationS
 
 func getFollowerListResp(err errno.ErrNo, users []*RelationServer.User) *RelationServer.DouyinRelationFollowerListResponse {
 	resp := new(RelationServer.DouyinRelationFollowerListResponse)
+	resp.BaseResp = &RelationServer.BaseResp{
+		StatusCode: err.ErrCode,
+		StatusMsg:  err.ErrMsg,
+	}
+	resp.UserList = users
+	return resp
+}
+
+func getFriendListResp(err errno.ErrNo, users []*RelationServer.FriendUser) *RelationServer.DouyinRelationFriendListResponse {
+	resp := new(RelationServer.DouyinRelationFriendListResponse)
 	resp.BaseResp = &RelationServer.BaseResp{
 		StatusCode: err.ErrCode,
 		StatusMsg:  err.ErrMsg,
@@ -112,4 +147,16 @@ func BuildgetFollowerListResp(err error, users []*RelationServer.User) *Relation
 	}
 	s := errno.ServiceErr.WithMessage(err.Error())
 	return getFollowerListResp(s, nil)
+}
+
+func BuildgetFriendListResp(err error, users []*RelationServer.FriendUser) *RelationServer.DouyinRelationFriendListResponse {
+	if err == nil {
+		return getFriendListResp(errno.Success, users)
+	}
+	e := errno.ErrNo{}
+	if errors.As(err, &e) {
+		return getFriendListResp(e, nil)
+	}
+	s := errno.ServiceErr.WithMessage(err.Error())
+	return getFriendListResp(s, nil)
 }

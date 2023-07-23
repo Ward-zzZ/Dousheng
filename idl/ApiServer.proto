@@ -32,6 +32,25 @@ message Comment {
     string create_date = 4; // 评论发布日期，格式 mm-dd
 }
 
+message FriendUser {
+      int64 id = 1; // 用户id
+    string name = 2; // 用户名称
+    int64 follow_count = 3; // 关注总数--可选
+    int64 follower_count = 4; // 粉丝总数--可选
+    bool is_follow = 5; // true-已关注，false-未关注
+     string message = 6; // 最新聊天消息
+    int64 msgType = 7; // 0 => 当前请求用户接收的消息， 1 => 当前请求用户发送的消息
+
+}
+
+message ChatMessage {
+   int64 id = 1; // 消息id
+   int64 to_user_id = 2; // 该消息接收者的id
+   int64 from_user_id =3; // 该消息发送者的id
+   string content = 4; // 消息内容
+  optional string create_time = 5; // 消息创建时间
+}
+
 message BaseResp {
     int32 status_code = 1; // 状态码，0-成功，其他值-失败
     string status_msg = 2; // 返回状态描述--可选
@@ -53,7 +72,7 @@ message DouyinFeedResponse {
 message DouyinUserRegisterRequest {
     string username = 1[(api.query)="username", (api.vd)="len($) <= 32"];// 注册用户名，最长32个字符
     string password = 2[(api.query)="password", (api.vd)="len($) <= 32"];// 密码，最长32个字符
-}   
+}
 
 message DouyinUserRegisterResponse {
     BaseResp base_resp = 1;
@@ -164,7 +183,7 @@ message DouyinRelationFollowListRequest {
     int64 user_id = 1[(api.query)="user_id"];// 用户id
     string token = 2[(api.query)="token"];// 用户鉴权token
 }
-  
+
 message DouyinRelationFollowListResponse {
     BaseResp base_resp = 1;
     repeated User user_list = 2; // 用户信息列表
@@ -174,10 +193,44 @@ message DouyinRelationFollowListResponse {
 message DouyinRelationFollowerListRequest {
     int64 user_id = 1[(api.query)="user_id"];// 用户id
     string token = 2[(api.query)="token"];// 用户鉴权token
-}  
+}
 message DouyinRelationFollowerListResponse {
     BaseResp base_resp = 1;
     repeated User user_list = 2; // 用户列表
+}
+
+//Relation--friendlist
+message DouyinRelationFriendListRequest {
+    int64 user_id = 1[(api.query)="user_id"];// 用户id
+    string token = 2[(api.query)="token"];// 用户鉴权token
+}
+
+message DouyinRelationFriendListResponse {
+    BaseResp base_resp = 1;
+    repeated FriendUser user_list = 2; // 好友列表
+}
+
+
+//Message--chat
+message DouyinMessageChatRequest {
+    string token = 1[(api.query)="token"];// 用户鉴权token
+    int64 to_user_id = 2[(api.query)="to_user_id"];// 对方用户id
+    int64 pre_msg_time=3;//上次最新消息的时间（新增字段-apk更新中）
+}
+message DouyinMessageChatResponse {
+    BaseResp base_resp = 1;
+    repeated ChatMessage chat_list = 2; // 聊天消息列表
+}
+
+//message--action
+message DouyinMessageActionRequest {
+    string token = 1[(api.query)="token"];// 用户鉴权token
+    int64 to_user_id = 2[(api.query)="to_user_id"];// 对方用户id
+    int32 action_type = 3[(api.query)="action_type"];// 1-发送消息，2-删除消息
+    string content = 4[(api.query)="content", (api.vd)="len($) > 0"];// 用户填写的消息内容，在action_type=1的时候使用
+}
+message DouyinMessageActionResponse {
+    BaseResp base_resp = 1;
 }
 
 
@@ -199,10 +252,13 @@ service ApiService {
     //Comment
     rpc CommentAction  (DouyinCommentActionRequest) returns (DouyinCommentActionResponse) {option (api.post) = "/douyin/comment/action/";}
     rpc CommentList  (DouyinCommentListRequest) returns (DouyinCommentListResponse) {option (api.get) = "/douyin/comment/list/";}
-    
+
     ////Extra-api-II
     //Relation
     rpc RelationAction (DouyinRelationActionRequest) returns (DouyinRelationActionResponse) {option (api.post) = "/douyin/relation/action/";}
     rpc RelationFollowList (DouyinRelationFollowListRequest) returns (DouyinRelationFollowListResponse) {option (api.get) = "/douyin/relation/follow/list/";}
     rpc RelationFollowerList (DouyinRelationFollowerListRequest) returns (DouyinRelationFollowerListResponse) {option (api.get) = "/douyin/relation/follower/list/";}
+    rpc RelationFriendList (DouyinRelationFriendListRequest) returns (DouyinRelationFriendListResponse) {option (api.get) = "/douyin/relation/friend/list/";}
+    rpc MessageChat (DouyinMessageChatRequest) returns (DouyinMessageChatResponse) {option (api.get) = "/douyin/message/chat/";}
+    rpc MessageAction (DouyinMessageActionRequest) returns (DouyinMessageActionResponse) {option (api.post) = "/douyin/message/action/";}
 }

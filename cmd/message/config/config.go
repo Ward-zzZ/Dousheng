@@ -6,7 +6,6 @@ type MysqlConfig struct {
 	Name     string `mapstructure:"db" json:"db"`
 	User     string `mapstructure:"user" json:"user"`
 	Password string `mapstructure:"password" json:"password"`
-	Salt     string `mapstructure:"salt" json:"salt"`
 }
 
 type RedisConfig struct {
@@ -15,17 +14,14 @@ type RedisConfig struct {
 	Password string `mapstructure:"password" json:"password"`
 }
 
-type RabbitMqConfig struct {
-	Host     string `mapstructure:"host" json:"host"`
-	Port     int    `mapstructure:"port" json:"port"`
-	User     string `mapstructure:"user" json:"user"`
-	Password string `mapstructure:"password" json:"password"`
-}
-
 type ConsulConfig struct {
 	Host string `mapstructure:"host" json:"host"`
 	Port int    `mapstructure:"port" json:"port"`
 	Key  string `mapstructure:"key" json:"key"`
+}
+
+type MsgEncryptConfig struct {
+	Key string `mapstructure:"key" json:"key"`
 }
 
 type OtelConfig struct {
@@ -37,16 +33,7 @@ type ServerConfig struct {
 	Host         string         `mapstructure:"host" json:"host"`
 	MysqlInfo    MysqlConfig    `mapstructure:"mysql" json:"mysql"`
 	RedisInfo    RedisConfig    `mapstructure:"redis" json:"redis"`
-	RabbitMqInfo RabbitMqConfig `mapstructure:"rabbitmq" json:"rabbitmq"`
+	ConsulInfo   ConsulConfig   `mapstructure:"consul" json:"consul"`
+	MsgEncrypt   MsgEncryptConfig `mapstructure:"msg_encrypt" json:"msg_encrypt"`
 	OtelInfo     OtelConfig     `mapstructure:"otel" json:"otel"`
-	UserSrvInfo  UserSrvConfig  `mapstructure:"user_srv" json:"user_srv"`
-	MsgSrvInfo   MessageSrvConfig  `mapstructure:"msg_srv" json:"msg_srv"`
-}
-
-type UserSrvConfig struct {
-	Name string `mapstructure:"name" json:"name"`
-}
-
-type MessageSrvConfig struct {
-	Name string `mapstructure:"name" json:"name"`
 }

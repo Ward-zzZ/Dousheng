@@ -27,6 +27,9 @@ key: 'tiktok/api_srv'
 #   },
 #   "comment_srv":{
 #     "name": "comment_srv"
+#   },
+# "message_srv":{
+#     "name": "message_srv"
 #   }
 # }
 # ```

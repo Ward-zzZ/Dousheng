@@ -12,6 +12,7 @@ import (
 	"tiktok-demo/cmd/relation/pkg/pack"
 	"tiktok-demo/shared/consts"
 	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/kitex_gen/MessageServer"
 	"tiktok-demo/shared/kitex_gen/RelationServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
 
@@ -24,6 +25,7 @@ type RelationServiceImpl struct {
 	MysqlManager
 	RedisManager
 	UserManager
+	MessageManager
 }
 
 type MysqlManager interface {
@@ -33,6 +35,7 @@ type MysqlManager interface {
 	GetFansList(userId int64) ([]*mysql.Relation, error)
 	GetFollowList(userId int64) ([]*mysql.Relation, error)
 	GetFollowSet(userId int64) (map[int64]struct{}, error)
+	GetFriendList(userId int64) ([]*mysql.Relation, error)
 }
 
 type RedisManager interface {
@@ -50,6 +53,10 @@ type UserManager interface {
 	MGetUserInfo(ctx context.Context, req *UserServer.DouyinMUserRequest, callOptions ...callopt.Option) (resp *UserServer.DouyinMUserResponse, err error)
 }
 
+type MessageManager interface {
+	MessageLatestMsg(ctx context.Context, req *MessageServer.DouyinMessageLatestMsgRequest, callOptions ...callopt.Option) (resp *MessageServer.DouyinMessageLatestMsgResponse, err error)
+}
+
 // RelationAction implements the RelationServiceImpl interface.
 func (s *RelationServiceImpl) RelationAction(ctx context.Context, req *RelationServer.DouyinRelationActionRequest) (resp *RelationServer.DouyinRelationActionResponse, err error) {
 	resp = pack.BuildrelationActionResp(nil)
@@ -62,7 +69,7 @@ func (s *RelationServiceImpl) RelationAction(ctx context.Context, req *RelationS
 	if req.UserId == req.ToUserId {
 		return resp, nil
 	}
-// todo ：是否已经关注
+	// todo ：是否已经关注
 	// 2. action/undo action
 	// 2.1 First: rpc user service change follow count
 	UserRPCResp, _ := s.UserManager.ChangeUserFollowCount(ctx, &UserServer.DouyinChangeUserFollowRequest{
@@ -265,4 +272,53 @@ func (s *RelationServiceImpl) QueryRelation(ctx context.Context, req *RelationSe
 		}
 	}
 	return pack.BuildrelationQueryResp(nil, false), nil
+}
+
+// MGetRelationFriendList implements the RelationServiceImpl interface.
+func (s *RelationServiceImpl) MGetRelationFriendList(ctx context.Context, req *RelationServer.DouyinRelationFriendListRequest) (resp *RelationServer.DouyinRelationFriendListResponse, err error) {
+	friendList, err := s.MysqlManager.GetFriendList(req.UserId)
+	if err != nil {
+		klog.Errorf("MGetRelationFriendList mysql err:%v", err)
+		return pack.BuildgetFriendListResp(errno.InternalServerErr, nil), nil
+	}
+	friendIDs := make([]int64, 0)
+	for _, friend := range friendList {
+		friendIDs = append(friendIDs, friend.ToUserID)
+	}
+	if len(friendIDs) == 0 {
+		return pack.BuildgetFriendListResp(errno.Success.WithMessage("no friend"), nil), nil
+	}
+
+	// user rpc and message rpc
+	// 开协程并发请求
+	var wg sync.WaitGroup
+	wg.Add(2)
+	var UsersRPCResp *UserServer.DouyinMUserResponse
+	var MessageRPCResp *MessageServer.DouyinMessageLatestMsgResponse
+	go func() {
+		UsersRPCResp, err = s.UserManager.MGetUserInfo(ctx, &UserServer.DouyinMUserRequest{
+			UserId: friendIDs,
+		})
+		if UsersRPCResp.BaseResp.StatusCode != 0 {
+			klog.Errorf("UserRPC MGetUserInfo err:%v", UsersRPCResp.BaseResp.StatusMsg)
+		}
+		wg.Done()
+	}()
+	go func() {
+		MessageRPCResp, err = s.MessageManager.MessageLatestMsg(ctx, &MessageServer.DouyinMessageLatestMsgRequest{
+			UserId:       req.UserId,
+			ToUserIdList: friendIDs,
+		})
+		if MessageRPCResp.BaseResp.StatusCode != 0 {
+			klog.Errorf("MessageRPC GetLatestMsg err:%v", MessageRPCResp.BaseResp.StatusMsg)
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	friends, err := pack.FriendUserInfoConvert(UsersRPCResp, MessageRPCResp)
+	if err != nil {
+		klog.Errorf("FriendUserInfoConvert err:%v", err)
+		return pack.BuildgetFriendListResp(errno.StructConvertFailedErr, nil), nil
+	}
+	return pack.BuildgetFriendListResp(nil, friends), nil
 }

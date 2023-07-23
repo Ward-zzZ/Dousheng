@@ -26,6 +26,7 @@ func NewServiceInfo() *kitex.ServiceInfo {
 		"MGetRelationFollowList":       kitex.NewMethodInfo(mGetRelationFollowListHandler, newMGetRelationFollowListArgs, newMGetRelationFollowListResult, false),
 		"MGetUserRelationFollowerList": kitex.NewMethodInfo(mGetUserRelationFollowerListHandler, newMGetUserRelationFollowerListArgs, newMGetUserRelationFollowerListResult, false),
 		"QueryRelation":                kitex.NewMethodInfo(queryRelationHandler, newQueryRelationArgs, newQueryRelationResult, false),
+		"MGetRelationFriendList":       kitex.NewMethodInfo(mGetRelationFriendListHandler, newMGetRelationFriendListArgs, newMGetRelationFriendListResult, false),
 	}
 	extra := map[string]interface{}{
 		"PackageName": "RelationServer",
@@ -653,6 +654,159 @@ func (p *QueryRelationResult) GetResult() interface{} {
 	return p.Success
 }
 
+func mGetRelationFriendListHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(RelationServer.DouyinRelationFriendListRequest)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(RelationServer.RelationService).MGetRelationFriendList(ctx, req)
+		if err != nil {
+			return err
+		}
+		if err := st.SendMsg(resp); err != nil {
+			return err
+		}
+	case *MGetRelationFriendListArgs:
+		success, err := handler.(RelationServer.RelationService).MGetRelationFriendList(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*MGetRelationFriendListResult)
+		realResult.Success = success
+	}
+	return nil
+}
+func newMGetRelationFriendListArgs() interface{} {
+	return &MGetRelationFriendListArgs{}
+}
+
+func newMGetRelationFriendListResult() interface{} {
+	return &MGetRelationFriendListResult{}
+}
+
+type MGetRelationFriendListArgs struct {
+	Req *RelationServer.DouyinRelationFriendListRequest
+}
+
+func (p *MGetRelationFriendListArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetReq() {
+		p.Req = new(RelationServer.DouyinRelationFriendListRequest)
+	}
+	return p.Req.FastRead(buf, _type, number)
+}
+
+func (p *MGetRelationFriendListArgs) FastWrite(buf []byte) (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.FastWrite(buf)
+}
+
+func (p *MGetRelationFriendListArgs) Size() (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.Size()
+}
+
+func (p *MGetRelationFriendListArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, fmt.Errorf("No req in MGetRelationFriendListArgs")
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *MGetRelationFriendListArgs) Unmarshal(in []byte) error {
+	msg := new(RelationServer.DouyinRelationFriendListRequest)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var MGetRelationFriendListArgs_Req_DEFAULT *RelationServer.DouyinRelationFriendListRequest
+
+func (p *MGetRelationFriendListArgs) GetReq() *RelationServer.DouyinRelationFriendListRequest {
+	if !p.IsSetReq() {
+		return MGetRelationFriendListArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *MGetRelationFriendListArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *MGetRelationFriendListArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type MGetRelationFriendListResult struct {
+	Success *RelationServer.DouyinRelationFriendListResponse
+}
+
+var MGetRelationFriendListResult_Success_DEFAULT *RelationServer.DouyinRelationFriendListResponse
+
+func (p *MGetRelationFriendListResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetSuccess() {
+		p.Success = new(RelationServer.DouyinRelationFriendListResponse)
+	}
+	return p.Success.FastRead(buf, _type, number)
+}
+
+func (p *MGetRelationFriendListResult) FastWrite(buf []byte) (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.FastWrite(buf)
+}
+
+func (p *MGetRelationFriendListResult) Size() (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.Size()
+}
+
+func (p *MGetRelationFriendListResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, fmt.Errorf("No req in MGetRelationFriendListResult")
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *MGetRelationFriendListResult) Unmarshal(in []byte) error {
+	msg := new(RelationServer.DouyinRelationFriendListResponse)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *MGetRelationFriendListResult) GetSuccess() *RelationServer.DouyinRelationFriendListResponse {
+	if !p.IsSetSuccess() {
+		return MGetRelationFriendListResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *MGetRelationFriendListResult) SetSuccess(x interface{}) {
+	p.Success = x.(*RelationServer.DouyinRelationFriendListResponse)
+}
+
+func (p *MGetRelationFriendListResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *MGetRelationFriendListResult) GetResult() interface{} {
+	return p.Success
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -698,6 +852,16 @@ func (p *kClient) QueryRelation(ctx context.Context, Req *RelationServer.DouyinQ
 	_args.Req = Req
 	var _result QueryRelationResult
 	if err = p.c.Call(ctx, "QueryRelation", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) MGetRelationFriendList(ctx context.Context, Req *RelationServer.DouyinRelationFriendListRequest) (r *RelationServer.DouyinRelationFriendListResponse, err error) {
+	var _args MGetRelationFriendListArgs
+	_args.Req = Req
+	var _result MGetRelationFriendListResult
+	if err = p.c.Call(ctx, "MGetRelationFriendList", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

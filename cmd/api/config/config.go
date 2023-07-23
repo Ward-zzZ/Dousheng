@@ -26,6 +26,7 @@ type ServerConfig struct {
 	RelationSrvInfo RPCSrvConfig `mapstructure:"relation_srv" json:"relation_srv"`
 	UserSrvInfo     RPCSrvConfig `mapstructure:"user_srv" json:"user_srv"`
 	VideoSrvInfo    RPCSrvConfig `mapstructure:"video_srv" json:"video_srv"`
+	MessageSrvInfo  RPCSrvConfig `mapstructure:"message_srv" json:"message_srv"`
 }
 
 type RPCSrvConfig struct {

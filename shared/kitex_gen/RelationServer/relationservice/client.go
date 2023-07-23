@@ -15,6 +15,7 @@ type Client interface {
 	MGetRelationFollowList(ctx context.Context, Req *RelationServer.DouyinRelationFollowListRequest, callOptions ...callopt.Option) (r *RelationServer.DouyinRelationFollowListResponse, err error)
 	MGetUserRelationFollowerList(ctx context.Context, Req *RelationServer.DouyinRelationFollowerListRequest, callOptions ...callopt.Option) (r *RelationServer.DouyinRelationFollowerListResponse, err error)
 	QueryRelation(ctx context.Context, Req *RelationServer.DouyinQueryRelationRequest, callOptions ...callopt.Option) (r *RelationServer.DouyinQueryRelationResponse, err error)
+	MGetRelationFriendList(ctx context.Context, Req *RelationServer.DouyinRelationFriendListRequest, callOptions ...callopt.Option) (r *RelationServer.DouyinRelationFriendListResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -64,4 +65,9 @@ func (p *kRelationServiceClient) MGetUserRelationFollowerList(ctx context.Contex
 func (p *kRelationServiceClient) QueryRelation(ctx context.Context, Req *RelationServer.DouyinQueryRelationRequest, callOptions ...callopt.Option) (r *RelationServer.DouyinQueryRelationResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.QueryRelation(ctx, Req)
+}
+
+func (p *kRelationServiceClient) MGetRelationFriendList(ctx context.Context, Req *RelationServer.DouyinRelationFriendListRequest, callOptions ...callopt.Option) (r *RelationServer.DouyinRelationFriendListResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.MGetRelationFriendList(ctx, Req)
 }

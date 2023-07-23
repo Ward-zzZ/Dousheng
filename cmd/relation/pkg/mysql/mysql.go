@@ -152,3 +152,14 @@ func (m *RelationManager) GetFollowSet(userId int64) (map[int64]struct{}, error)
 	}
 	return followSet, nil
 }
+
+func (m *RelationManager) GetFriendList(userId int64) ([]*Relation, error) {
+	var relations []*Relation
+	//相互关注才是好友
+	err := m.db.Where("user_id = ? and to_user_id in (?)", userId, m.db.Table("relation").Select("user_id").Where("to_user_id = ?", userId)).Find(&relations).Error
+	if err != nil {
+		klog.Infof("get friend list failed: %s", err.Error())
+		return nil, err
+	}
+	return relations, nil
+}

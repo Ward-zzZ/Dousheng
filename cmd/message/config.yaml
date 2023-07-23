@@ -1,39 +1,29 @@
 # config of consul server
 host: '127.0.0.1'
 port: 8500
-key: 'tiktok/relation_srv'
+key: 'tiktok/message_srv'
 
-# relation_srv 的KV配置
+# message_srv的KV配置
 # ``` json
 # {
-#   "name": "relation_srv",
+#   "name": "message_srv",
 #   "mysql": {
 #     "host": "127.0.0.1",
 #     "port": 3306,
 #     "user": "root",
 #     "password": "123456",
-#     "db": "tiktok",
-#     "salt": "tiktok123"
+#     "db": "tiktok"
 #   },
 #   "redis": {
 #     "host": "127.0.0.1",
 #     "port": 6378,
 #     "password": "tiktok123"
 #   },
-#   "rabbitmq": {
-#     "host": "127.0.0.1",
-#     "port": 5672,
-#     "user": "tiktok",
-#     "password": "123321"
+#   "msg_encrypt": {
+#     "key": "ABCDABCDABCDABCD",
 #   },
 #   "otel": {
 #     "endpoint": ":4317"
-#   },
-#   "user_srv": {
-#     "name": "user_srv"
-#   },
-#   "msg_srv": {
-#     "name": "message_srv"
 #   }
 # }
 # ```

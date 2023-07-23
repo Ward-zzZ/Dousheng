@@ -5,13 +5,12 @@ import (
 	"net"
 	"strconv"
 
-	"tiktok-demo/cmd/relation/config"
-	"tiktok-demo/cmd/relation/initialize"
-	"tiktok-demo/cmd/relation/pkg/mq"
-	"tiktok-demo/cmd/relation/pkg/mysql"
-	"tiktok-demo/cmd/relation/pkg/redis"
+	"tiktok-demo/cmd/message/config"
+	"tiktok-demo/cmd/message/initialize"
+	"tiktok-demo/cmd/message/pkg/mysql"
+	// "tiktok-demo/cmd/message/pkg/redis"
 	"tiktok-demo/shared/consts"
-	"tiktok-demo/shared/kitex_gen/RelationServer/relationservice"
+	"tiktok-demo/shared/kitex_gen/MessageServer/messageservice"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/limit"
@@ -23,31 +22,26 @@ import (
 )
 
 func main() {
-	//initialization
+
 	initialize.InitLogger()
 	initialize.InitConfig()
 	IP, Port := initialize.InitFlag()
 	r, info := initialize.InitRegistry(Port)
 	db := initialize.InitDB()
-	redisClient := initialize.InitRedis()
-	MysqlManager := mysql.NewManager(db, config.GlobalServerConfig.MysqlInfo.Salt)
-	mq.InitMq()
-	mq.MysqlManager = MysqlManager
+	// redisClient := initialize.InitRedis()
+	MysqlManager := mysql.NewManager(db)
+
 	p := provider.NewOpenTelemetryProvider(
 		provider.WithServiceName(config.GlobalServerConfig.Name),
 		provider.WithExportEndpoint(config.GlobalServerConfig.OtelInfo.EndPoint),
 		provider.WithInsecure(),
 	)
 	defer p.Shutdown(context.Background())
-	userClient := initialize.InitUser()
-	messageClient := initialize.InitMessage()
-	svr := relationservice.NewServer(&RelationServiceImpl{
-		MysqlManager:   MysqlManager,
-		RedisManager:   redis.NewManager(redisClient),
-		UserManager:    userClient,
-		MessageManager: messageClient,
+	svr := messageservice.NewServer(&MessageServiceImpl{
+		MysqlManager: MysqlManager,
+		// RedisManager: redis.NewManager(redisClient),
 	}, server.WithRegistry(r), server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
-		ServiceName: "relation_srv",
+		ServiceName: "message_srv",
 	}),
 		server.WithServiceAddr(utils.NewNetAddr(consts.TCP, net.JoinHostPort(IP, strconv.Itoa(Port)))),
 		server.WithRegistry(r),
@@ -60,4 +54,5 @@ func main() {
 	if err != nil {
 		klog.Fatalf("run server failed: %v\n", err)
 	}
+
 }

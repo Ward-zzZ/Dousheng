@@ -12,6 +12,16 @@ message User {
     bool is_follow = 5; // true-已关注，false-未关注
 }
 
+message FriendUser {
+      int64 id = 1; // 用户id
+    string name = 2; // 用户名称
+    int64 follow_count = 3; // 关注总数--可选
+    int64 follower_count = 4; // 粉丝总数--可选
+    bool is_follow = 5; // true-已关注，false-未关注
+     string message = 6; // 最新聊天消息
+    int64 msgType = 7; // 0 => 当前请求用户接收的消息， 1 => 当前请求用户发送的消息
+}
+
 message BaseResp {
     int32 status_code = 1; // 状态码，0-成功，其他值-失败
     string status_msg = 2; // 返回状态描述--可选
@@ -31,7 +41,7 @@ message DouyinRelationActionResponse {
 message DouyinRelationFollowListRequest {
     int64 user_id = 1;// 用户id
 }
-  
+
 message DouyinRelationFollowListResponse {
     BaseResp base_resp = 1;
     repeated User user_list = 2; // 用户信息列表
@@ -40,25 +50,36 @@ message DouyinRelationFollowListResponse {
 //Relation--follower
 message DouyinRelationFollowerListRequest {
     int64 user_id = 1;// 用户id
-}  
+}
 message DouyinRelationFollowerListResponse {
     BaseResp base_resp = 1;
     repeated User user_list = 2; // 用户列表
 }
 
+//Relation--friend
+message DouyinRelationFriendListRequest {
+    int64 user_id = 1;// 用户id
+}
+message DouyinRelationFriendListResponse {
+    BaseResp base_resp = 1;
+    repeated FriendUser user_list = 2; // 好友列表
+}
+
+
 //Relation--query
 message DouyinQueryRelationRequest {
     int64 user_id = 1;// 用户id
     int64 to_user_id = 2;// 被查询用户id
-} 
+}
 message DouyinQueryRelationResponse {
     BaseResp base_resp = 1;
     bool is_follow = 2; // true-已关注，false-未关注
 }
 
 service RelationService {
-    rpc RelationAction (DouyinRelationActionRequest) returns (DouyinRelationActionResponse) {}  
+    rpc RelationAction (DouyinRelationActionRequest) returns (DouyinRelationActionResponse) {}
     rpc MGetRelationFollowList (DouyinRelationFollowListRequest ) returns (DouyinRelationFollowListResponse) {}
     rpc MGetUserRelationFollowerList (DouyinRelationFollowerListRequest) returns (DouyinRelationFollowerListResponse) {}
     rpc QueryRelation (DouyinQueryRelationRequest) returns (DouyinQueryRelationResponse) {}
+    rpc MGetRelationFriendList (DouyinRelationFriendListRequest) returns (DouyinRelationFriendListResponse) {}
 }

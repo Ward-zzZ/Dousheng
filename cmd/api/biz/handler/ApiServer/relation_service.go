@@ -39,7 +39,7 @@ func RelationAction(ctx context.Context, c *app.RequestContext) {
 	// 	return
 	// }
 
-		tid, err := strconv.ParseInt(c.Query("to_user_id"), 10, 64)
+	tid, err := strconv.ParseInt(c.Query("to_user_id"), 10, 64)
 	if err != nil {
 		respErr := errno.NewErrNo(errno.ParamErrCode, "to_user_id 不合法")
 		hlog.Error("param to_user_id is invalid", respErr)
@@ -127,4 +127,32 @@ func RelationFollowerList(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	pkg.SendRelationListResponse(c, resp)
+}
+
+// RelationFriendList .
+// @router /douyin/relation/friend/list/ [GET]
+func RelationFriendList(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req ApiServer.DouyinRelationFriendListRequest
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		c.String(consts.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, _ := c.Get(Globalconsts.IdentityKey)
+
+	// call RPC: relation friend list service
+	resp, _ := config.GlobalRelationClient.MGetRelationFriendList(ctx, &RelationServer.DouyinRelationFriendListRequest{
+		UserId: user.(*ApiServer.User).Id,
+	})
+
+	if resp.BaseResp.StatusCode != 0 {
+		respErr := errno.NewErrNo(resp.BaseResp.StatusCode, resp.BaseResp.StatusMsg)
+		hlog.Error("Rpc relation friend list failed", respErr)
+		pkg.SendFriendListResponse(c, respErr)
+		return
+	}
+
+	pkg.SendFriendListResponse(c, resp)
 }
