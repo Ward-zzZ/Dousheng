@@ -5,6 +5,7 @@ import (
 
 	"tiktok-demo/cmd/comment/pkg/mysql"
 	"tiktok-demo/shared/errno"
+	"tiktok-demo/shared/tools"
 	"tiktok-demo/shared/kitex_gen/CommentServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
 )
@@ -71,7 +72,7 @@ func CommentInfoConvert(u *UserServer.User, v *mysql.Comment) *CommentServer.Com
 			FollowerCount: u.FollowerCount,
 			IsFollow:      false, // query relation rpc in api gateway
 		},
-		Content:    v.Content,
+		Content:    tools.Filter(v.Content),
 		CreateDate: v.Model.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
