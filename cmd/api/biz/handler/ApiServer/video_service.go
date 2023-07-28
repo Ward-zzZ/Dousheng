@@ -74,6 +74,7 @@ func Feed(ctx context.Context, c *app.RequestContext) {
 		respErr := errno.NewErrNo(videosFeedResp.BaseResp.StatusCode, videosFeedResp.BaseResp.StatusMsg)
 		hlog.Error("feed rpc error", "error", respErr)
 		pkg.SendFeedResponse(c, respErr, nil)
+		return
 	}
 	pkg.SendFeedResponse(c, nil, videosFeedResp.VideoList)
 }
@@ -115,7 +116,7 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 	if user == nil {
 		hlog.Error("user is not login")
 		pkg.SendPublishActionResponse(c, errno.UserNotLoginErr, nil)
-
+		return
 	} else {
 		userId = user.(*ApiServer.User).Id
 	}
@@ -131,6 +132,8 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 		respErr := errno.NewErrNo(PublishActionResp.BaseResp.StatusCode, PublishActionResp.BaseResp.StatusMsg)
 		hlog.Error("PublishActionResp error", "error", respErr)
 		pkg.SendPublishActionResponse(c, respErr, nil)
+		return
+
 	}
 	pkg.SendPublishActionResponse(c, errno.Success, nil)
 }
@@ -162,6 +165,7 @@ func PublishList(ctx context.Context, c *app.RequestContext) {
 		respErr := errno.NewErrNo(PublishListResp.BaseResp.StatusCode, PublishListResp.BaseResp.StatusMsg)
 		hlog.Error("PublishList rpc error", "error", respErr)
 		pkg.SendPublishListResponse(c, respErr, nil)
+		return
 	}
 	pkg.SendPublishListResponse(c, errno.Success, PublishListResp.VideoList)
 }

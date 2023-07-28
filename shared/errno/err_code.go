@@ -49,6 +49,7 @@ const (
 const (
 	PublishActionErrCode int32 = iota + 10301
 	VideoNotExistErrCode
+	VideoTypeErrCode
 	PublishListErrCode
 	FeedErrCode
 	VideoRpcUserErrCode

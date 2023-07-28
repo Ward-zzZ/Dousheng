@@ -69,6 +69,7 @@ var (
 	// video
 	VideoNotExistErr 			 = NewErrNo(VideoNotExistErrCode, "Video not exists")
 	PublishActionErr         = NewErrNo(PublishActionErrCode, "Publish Action failed")
+	VideoTypeErr             = NewErrNo(VideoTypeErrCode, "Video Type is wrong")
 	PublishListErr           = NewErrNo(PublishListErrCode, "Publish List failed")
 	FeedErr                  = NewErrNo(FeedErrCode, "Feed videos failed")
 	VideoRpcUserErr          = NewErrNo(VideoRpcUserErrCode, "Video rpc User failed")

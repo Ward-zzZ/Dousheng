@@ -16,8 +16,8 @@ func InitMinio() *minio.Client {
 	// accessKeyID : 标识的用户唯一ID
 	// secretAccessKey : 访问密钥
 	// Bucket : 存储桶名称
-	klog.Infof("minio url: %s", mi.MinioURL+":"+mi.MinioPort)
-	mc, err := minio.New(mi.MinioURL+":"+mi.MinioPort, &minio.Options{
+	klog.Infof("minio url: %s", "127.0.0.1:9000")
+	mc, err := minio.New("127.0.0.1:9000", &minio.Options{
 		Creds:  credentials.NewStaticV4(mi.AccessKeyID, mi.SecretAccessKey, ""),
 		Secure: false,
 	})
