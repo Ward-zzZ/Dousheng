@@ -39,7 +39,7 @@ func NewManager(db *gorm.DB, salt string) *FavoriteManager {
 // get video's favorite user id list
 func (m *FavoriteManager) GetFavoriteUserIdList(videoId int64) ([]*Favorite, error) {
 	var favorites []*Favorite
-	err := m.db.Where("video_id = ?", videoId).Find(&favorites).Error
+	err := m.db.Where("video_id = ? and is_favorite = ?", videoId, true).Find(&favorites).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		klog.Infof("get favorite user id list of video %d failed: %s", videoId, err.Error())
 		return nil, err
@@ -50,7 +50,7 @@ func (m *FavoriteManager) GetFavoriteUserIdList(videoId int64) ([]*Favorite, err
 // get user's favorite video id list
 func (m *FavoriteManager) GetFavoriteVideoIdList(userId int64) ([]*Favorite, error) {
 	var favorites []*Favorite
-	err := m.db.Where("user_id = ?", userId).Find(&favorites).Error
+	err := m.db.Where("user_id = ? and is_favorite = ?", userId, true).Find(&favorites).Error
 	if err != nil {
 		klog.Infof("get favorite video id list of user %d failed: %s", userId, err.Error())
 		if errors.Is(err, gorm.ErrRecordNotFound) {

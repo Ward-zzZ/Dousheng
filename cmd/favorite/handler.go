@@ -34,10 +34,14 @@ type MysqlManager interface {
 }
 
 type RedisManager interface {
+	SetUserLikeList(c context.Context, uid int64, vids []int64) error
 	AddUserLikeList(c context.Context, uid int64, vid int64) (bool, error)
 	DelUserLikeList(c context.Context, uid int64, vid int64) (bool, error)
 	QueryUserLike(c context.Context, uid int64, vid int64) (bool, error)
 	GetUserLikeList(c context.Context, uid int64) ([]int64, error)
+	SetVideoLikeCount(c context.Context, vid int64, count int64) error
+	AddVideoLikeCount(c context.Context, vid int64) error
+	DelVideoLikeCount(c context.Context, vid int64) error
 	GetVideoLikeCount(c context.Context, vid int64) (int64, error)
 }
 
@@ -49,11 +53,56 @@ type VideoManager interface {
 func (s *FavoriteServiceImpl) FavoriteAction(ctx context.Context, req *FavoriteServer.DouyinFavoriteActionRequest) (resp *FavoriteServer.DouyinFavoriteActionResponse, err error) {
 	resp = pack.BuildfavoriteActionResp(nil)
 
-	// 1. check params
-	if req.ActionType != 1 && req.ActionType != 2 {
-		resp = pack.BuildfavoriteActionResp(errno.FavoriteActionTypeErr)
+	//先检查当前的点赞状态
+	isFavorite, err := s.RedisManager.QueryUserLike(ctx, req.UserId, req.VideoId)
+	if err != nil {
+		// redis不存在，从mysql中获取用户点赞列表
+		favoriteList, _ := s.MysqlManager.GetFavoriteVideoIdList(req.UserId)
+		if len(favoriteList) == 0 {
+			isFavorite = false
+		} else {
+			favoriteListId := make([]int64, 0)
+			for _, v := range favoriteList {
+				favoriteListId = append(favoriteListId, v.VideoId)
+				if v.VideoId == req.VideoId {
+					isFavorite = true
+				}
+			}
+			// 更新redis
+			s.RedisManager.SetUserLikeList(ctx, req.UserId, favoriteListId)
+		}
 	}
-	// 2. action,using mq update mysql
+	if isFavorite && (req.ActionType == 1) {
+		resp = pack.BuildfavoriteActionResp(errno.FavoriteActionTypeErr.WithMessage("已经点赞"))
+		return resp, nil
+	}
+	if !isFavorite && req.ActionType == 2 {
+		resp = pack.BuildfavoriteActionResp(errno.FavoriteActionTypeErr.WithMessage("已经取消点赞"))
+		return resp, nil
+	}
+
+	if req.ActionType != 1 && req.ActionType != 2 {
+		resp = pack.BuildfavoriteActionResp(errno.FavoriteActionTypeErr.WithMessage("点赞类型错误"))
+	}
+	// 先更新redis，redis不存在时跳过更新
+	if req.ActionType == 1 {
+		if _, err = s.RedisManager.AddUserLikeList(ctx, req.UserId, req.VideoId); err != nil {
+			klog.Errorf("redis add user like list err:%v", err)
+		}
+		if err = s.RedisManager.AddVideoLikeCount(ctx, req.VideoId); err != nil {
+			klog.Errorf("redis add video like count err:%v", err)
+		}
+	} else {
+		if _, err = s.RedisManager.DelUserLikeList(ctx, req.UserId, req.VideoId); err != nil {
+			klog.Errorf("redis del user like list err:%v", err)
+		}
+		if err = s.RedisManager.DelVideoLikeCount(ctx, req.VideoId); err != nil {
+			klog.Errorf("redis add video like count err:%v", err)
+		}
+	}
+
+	// 异步更新mysql
+	// todo: sync redis and mysql periodically
 	msg := strings.Builder{}
 	msg.WriteString(strconv.FormatInt(req.UserId, 10))
 	msg.WriteString(":")
@@ -66,18 +115,8 @@ func (s *FavoriteServiceImpl) FavoriteAction(ctx context.Context, req *FavoriteS
 		resp = pack.BuildfavoriteActionResp(errno.FavoriteActionErr)
 		return resp, nil
 	}
-	// 3. update redis
-	if req.ActionType == 1 {
-		if _, err = s.RedisManager.AddUserLikeList(ctx, req.UserId, req.VideoId); err != nil {
-			klog.Errorf("redis add user like list err:%v", err)
-		}
-	} else {
-		if _, err = s.RedisManager.DelUserLikeList(ctx, req.UserId, req.VideoId); err != nil {
-			klog.Errorf("redis del user like list err:%v", err)
-		}
-	}
 
-	return
+	return resp, nil
 }
 
 // GetFavoriteList implements the FavoriteServiceImpl interface.
@@ -95,10 +134,11 @@ func (s *FavoriteServiceImpl) GetFavoriteList(ctx context.Context, req *Favorite
 			}
 			return pack.BuildgetFavoriteListResp(errno.QueryUserLikeVideoErr, nil), nil
 		}
+		// 1.3 update redis
 		for _, v := range favList {
 			videoIds = append(videoIds, v.VideoId)
-			s.RedisManager.AddUserLikeList(ctx, req.UserId, v.VideoId)
 		}
+		s.RedisManager.SetUserLikeList(ctx, req.UserId, videoIds)
 	} else {
 		videoIds = ids
 	}
@@ -120,7 +160,6 @@ func (s *FavoriteServiceImpl) GetFavoriteList(ctx context.Context, req *Favorite
 
 // GetFavoriteUser implements the FavoriteServiceImpl interface.
 func (s *FavoriteServiceImpl) GetFavoriteUser(ctx context.Context, req *FavoriteServer.DouyinUserBeFavoriteRequest) (resp *FavoriteServer.DouyinUserBeFavoriteResponse, err error) {
-	// TODO: Your code here...
 	return
 }
 
@@ -136,6 +175,9 @@ func (s *FavoriteServiceImpl) GetFavoriteVideo(ctx context.Context, req *Favorit
 			resp = pack.BuildfavoriteVideoQueryResp(errno.QueryFavoriteCountErr, 0)
 			return resp, nil
 		}
+		// 3. update redis
+		//异步更新redis
+		go s.RedisManager.SetVideoLikeCount(ctx, req.VideoId, count)
 	}
 	resp = pack.BuildfavoriteVideoQueryResp(nil, count)
 	return

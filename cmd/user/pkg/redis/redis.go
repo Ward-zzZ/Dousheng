@@ -20,35 +20,14 @@ func NewManager(client *redis.Client) *Manager {
 	return &Manager{client: client}
 }
 
-// store id and username in redis using string
-func (m *Manager) AddName(c context.Context, uid int64, uname string) error {
-	if err := m.client.Set(c, strconv.FormatInt(uid, 10)+"_username", uname, consts.RedisExpireTime).Err(); err != nil {
-		return err
-	}
-	return nil
-}
-
-// update FollowingNum and FollowerNum in redis using hash
-func (m *Manager) UpdateFollow(c context.Context, uid int64, ufollowing uint64, ufollower uint64) error {
-	uidStr := strconv.FormatInt(uid, 10) + "_follow_info"
-	if err := m.client.HSet(c, uidStr, "FollowingNum", ufollowing).Err(); err != nil {
-		return err
-	}
-	if err := m.client.HSet(c, uidStr, "FollowerNum", ufollower).Err(); err != nil {
-		return err
-	}
-	m.client.Expire(c, uidStr, consts.RedisExpireTime)
-	return nil
-}
-
-// delete the followingNum of uid and followerNum of tid in redis using hash
+// delete the userInfo from redis,double delete
 func (m *Manager) DeleteRelation(c context.Context, uid int64, tid int64) (bool, error) {
-	uidStr := strconv.FormatInt(uid, 10) + "_follow_info"
-	tidStr := strconv.FormatInt(tid, 10) + "_follow_info"
-	if err := m.client.HDel(c, uidStr, "FollowingNum").Err(); err != nil {
+	uidStr := "userInfo:" + strconv.FormatInt(uid, 10)
+	tidStr := "userInfo:" + strconv.FormatInt(tid, 10)
+	if err := m.client.Del(c, uidStr).Err(); err != nil {
 		return false, err
 	}
-	if err := m.client.HDel(c, tidStr, "FollowerNum").Err(); err != nil {
+	if err := m.client.Del(c, tidStr).Err(); err != nil {
 		return false, err
 	}
 	m.client.Expire(c, uidStr, consts.RedisExpireTime)
@@ -56,33 +35,40 @@ func (m *Manager) DeleteRelation(c context.Context, uid int64, tid int64) (bool,
 	return true, nil
 }
 
-// get user info(username,followingNum,followerNum) from redis by uid
+// get user info hash from redis
 func (m *Manager) GetUserInfo(c context.Context, uid int64) (*mysql.User, error) {
-	var FollowingNum, FollowerNum, Name string
-	uidStr := strconv.FormatInt(uid, 10)
-	FollowingNum, _ = m.client.HGet(c, uidStr+"_follow_info", "FollowingNum").Result()
-	FollowerNum, _ = m.client.HGet(c, uidStr+"_follow_info", "FollowerNum").Result()
-	Name, _ = m.client.Get(c, uidStr+"_username").Result()
-	if len(Name) > 0 && len(FollowingNum) > 0 && len(FollowerNum) > 0 {
-		FollowerNumUint64, _ := strconv.ParseUint(FollowerNum, 10, 64)
-		FollowingNumUint64, _ := strconv.ParseUint(FollowingNum, 10, 64)
-		return &mysql.User{
-			Uid:            uid,
-			Name:           Name,
-			FollowingCount: FollowingNumUint64,
-			FollowerCount:  FollowerNumUint64,
-		}, nil
+	uidStr := "userInfo:" + strconv.FormatInt(uid, 10)
+	cache, err := m.client.HGetAll(c, uidStr).Result()
+	if err != nil {
+		return nil, err
 	}
-	return nil, errno.UserNotExistErr
+	if len(cache) == 0 {
+		return nil, errno.UserNotExistErr
+	}
+	FollowerNumUint64, _ := strconv.ParseUint(cache["FollowerCount"], 10, 64)
+	FollowingNumUint64, _ := strconv.ParseUint(cache["FollowingCount"], 10, 64)
+	Uid, _ := strconv.ParseInt(cache["Uid"], 10, 64)
+	Name := cache["Name"]
+	return &mysql.User{
+		Uid:            Uid,
+		Name:           Name,
+		FollowingCount: FollowingNumUint64,
+		FollowerCount:  FollowerNumUint64,
+	}, nil
 }
 
 // insert user info into redis
 func (m *Manager) InsertUserInfo(c context.Context, u *mysql.User) error {
-	if err := m.AddName(c, u.Uid, u.Name); err != nil {
+	uidStr := "userInfo:" + strconv.FormatInt(u.Uid, 10)
+
+	if err := m.client.HSet(c, uidStr, map[string]interface{}{
+		"Uid":            u.Uid,
+		"Name":           u.Name,
+		"FollowingCount": u.FollowingCount,
+		"FollowerCount":  u.FollowerCount,
+	}).Err(); err != nil {
 		return err
 	}
-	if err := m.UpdateFollow(c, u.Uid, u.FollowingCount, u.FollowerCount); err != nil {
-		return err
-	}
+	m.client.Expire(c, uidStr, consts.RedisExpireTime)
 	return nil
 }

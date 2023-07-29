@@ -7,7 +7,6 @@ import (
 
 	"tiktok-demo/cmd/comment/pkg/mysql"
 	"tiktok-demo/cmd/comment/pkg/pack"
-	"tiktok-demo/shared/consts"
 	"tiktok-demo/shared/errno"
 	"tiktok-demo/shared/kitex_gen/CommentServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
@@ -34,6 +33,7 @@ type RedisManager interface {
 	AddComment(videoId int64, commentId int64, userId int64, content string) error
 	DelComment(videoId int64, commentId int64) (bool, error)
 	GetCommentList(videoId int64) (map[string]map[string]string, error)
+	SetCommentList(videoId int64, commentIds []int64, userId []int64, content []string) error
 }
 
 type UserManager interface {
@@ -51,6 +51,7 @@ func (s *CommentServiceImpl) CommentAction(ctx context.Context, req *CommentServ
 	}
 	// 2. action
 	if req.ActionType == 1 {
+		// 利用cache aside pattern
 		// 2.1 add comment to mysql
 		comment, err := s.MysqlManager.AddComment(req.VideoId, req.UserId, req.CommentText)
 		if err != nil {
@@ -58,11 +59,7 @@ func (s *CommentServiceImpl) CommentAction(ctx context.Context, req *CommentServ
 			return pack.BuildCommentActionResp(errno.CommentAddErr, nil), nil
 		}
 		// 2.2 add comment to redis
-		err = s.RedisManager.AddComment(req.VideoId, int64(comment.ID), req.UserId, req.CommentText)
-		if err != nil {
-			klog.Errorf("Redis AddComment err:%v", err)
-			return pack.BuildCommentActionResp(errno.CommentAddErr, nil), nil
-		}
+		s.RedisManager.AddComment(req.VideoId, int64(comment.ID), req.UserId, req.CommentText)
 		// 2.3 get user info from user service
 		// todo: using goroutine
 		user, err := s.UserManager.GetUserInfo(ctx, &UserServer.DouyinUserRequest{UserId: req.UserId})
@@ -74,13 +71,12 @@ func (s *CommentServiceImpl) CommentAction(ctx context.Context, req *CommentServ
 		resp := pack.BuildCommentActionResp(nil, pack.CommentInfoConvert(user.User, comment))
 		return resp, nil
 	} else {
-		s.RedisManager.DelComment(req.VideoId, req.CommentId)
+		// 3 del comment from mysql
 		err = s.MysqlManager.DelComment(req.VideoId, req.CommentId)
 		if err != nil {
 			klog.Errorf("Mysql DelComment err:%v", err)
 			return pack.BuildCommentActionResp(errno.CommentDelErr, nil), nil
 		}
-		time.Sleep(consts.SleepTime)
 		s.RedisManager.DelComment(req.VideoId, req.CommentId)
 		return resp, nil
 	}
@@ -92,7 +88,7 @@ func (s *CommentServiceImpl) CommentList(ctx context.Context, req *CommentServer
 	comments := make([]*mysql.Comment, 0)
 	// 1. get comment list from redis
 	redisComments, _ := s.RedisManager.GetCommentList(req.VideoId)
-	if redisComments != nil {
+	if len(redisComments) > 0 {
 		for commentId := range redisComments {
 			id, _ := strconv.ParseInt(commentId, 10, 64)
 			commentInfo := redisComments[commentId]
@@ -120,15 +116,21 @@ func (s *CommentServiceImpl) CommentList(ctx context.Context, req *CommentServer
 		if mysqlComments == nil {
 			return pack.BuildCommentListResp(nil, nil), nil
 		}
+		// 3. set comment list to redis
+		content := make([]string, 0)
+		commentIds := make([]int64, 0)
 		for _, comment := range mysqlComments {
 			userIDs = append(userIDs, comment.UserId)
 			comments = append(comments, comment)
+			commentIds = append(commentIds, int64(comment.ID))
+			content = append(content, comment.Content)
 		}
+		s.RedisManager.SetCommentList(req.VideoId, commentIds, userIDs, content)
 	}
 
 	// 3. get user info from user service
 	userInfos, err := s.UserManager.MGetUserInfo(ctx, &UserServer.DouyinMUserRequest{UserId: userIDs})
-	if err !=nil{
+	if err != nil {
 		klog.Errorf("GetUserInfo err:%v", err)
 		return pack.BuildCommentListResp(errno.UserRPCErr, nil), nil
 	}

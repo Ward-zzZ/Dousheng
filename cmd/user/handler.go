@@ -4,11 +4,9 @@ import (
 	"context"
 	"strconv"
 	"strings"
-	"time"
 
 	"tiktok-demo/cmd/user/pkg/mq"
 	"tiktok-demo/cmd/user/pkg/mysql"
-	"tiktok-demo/shared/consts"
 	"tiktok-demo/shared/errno"
 	"tiktok-demo/shared/kitex_gen/RelationServer"
 	"tiktok-demo/shared/kitex_gen/UserServer"
@@ -36,9 +34,7 @@ type MysqlManager interface {
 }
 
 type RedisManager interface {
-	UpdateFollow(c context.Context, uid int64, ufollowing uint64, ufollower uint64) error
 	DeleteRelation(c context.Context, uid int64, tid int64) (bool, error)
-	AddName(c context.Context, uid int64, uname string) error
 	GetUserInfo(c context.Context, uid int64) (*mysql.User, error)
 	InsertUserInfo(c context.Context, user *mysql.User) error
 }
@@ -205,11 +201,8 @@ func (s *UserServiceImpl) ChangeUserFollowCount(ctx context.Context, req *UserSe
 		if flag.IsFollow {
 			return resp, nil
 		}
-		// 3.1 delete from redis
-		s.RedisManager.DeleteRelation(ctx, req.UserId, req.ToUserId)
 		// 3.2 put into rabbitmq
 		err = mq.AddActor.Publish(ctx, msg.String())
-		time.Sleep(consts.SleepTime)
 		// 3.3 double deletion
 		s.RedisManager.DeleteRelation(ctx, req.UserId, req.ToUserId)
 
@@ -218,11 +211,8 @@ func (s *UserServiceImpl) ChangeUserFollowCount(ctx context.Context, req *UserSe
 		if !flag.IsFollow {
 			return resp, nil
 		}
-		// 3.1 delete from redis
-		s.RedisManager.DeleteRelation(ctx, req.UserId, req.ToUserId)
 		// 3.2 put into rabbitmq
 		err = mq.DelActor.Publish(ctx, msg.String())
-		time.Sleep(consts.SleepTime)
 		// 3.3 double deletion
 		s.RedisManager.DeleteRelation(ctx, req.UserId, req.ToUserId)
 	}

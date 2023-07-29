@@ -2,9 +2,11 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"tiktok-demo/shared/consts"
+	"tiktok-demo/shared/tools"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -18,46 +20,21 @@ func NewManager(client *redis.Client) *Manager {
 	return &Manager{client: client}
 }
 
-// part of uid's follow list in redis using set, solve hot key problem
-func (m *Manager) AddRelation(c context.Context, uid int64, tid int64) (bool, error) {
-	uidStr := strconv.FormatInt(uid, 10) + "_relation_list"
-	if err := m.client.SAdd(c, uidStr, tid).Err(); err != nil {
-		return false, err
-	}
-	if err := m.client.Expire(c, uidStr, consts.RedisExpireTime).Err(); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 // update follow list to uid's follow list in redis using set
-func (m *Manager) AddFollow(c context.Context, uid int64, ids []int64) (bool, error) {
-	uidStr := strconv.FormatInt(uid, 10) + "_follow_list"
-	for _, id := range ids {
-		if err := m.client.SAdd(c, uidStr, id).Err(); err != nil {
-			return false, err
-		}
+func (m *Manager) AddFollow(c context.Context, uid int64, tid int64) (bool, error) {
+	uidStr := "followList:" + strconv.FormatInt(uid, 10)
+	tidStr := "fansList:" + strconv.FormatInt(tid, 10)
+	pipeline := m.client.TxPipeline()
+	if m.client.Exists(c, uidStr).Val() != 0 {
+		pipeline.SAdd(c, uidStr, tid)
+		pipeline.Expire(c, uidStr, tools.RedisExpireTime())
 	}
-	if err := m.client.Expire(c, uidStr, consts.RedisExpireTime).Err(); err != nil {
-		return false, err
+	if m.client.Exists(c, tidStr).Val() != 0 {
+		pipeline.SAdd(c, tidStr, uid)
+		pipeline.Expire(c, tidStr, tools.RedisExpireTime())
 	}
-	return true, nil
-}
-
-// update fans list to uid's fans list in redis using set
-func (m *Manager) AddFans(c context.Context, uid int64, ids []int64) (bool, error) {
-	uidStr := strconv.FormatInt(uid, 10) + "_fans_list"
-	// 1. only add fans list to redis when the number of fans is greater than the threshold
-	if len(ids) < int(consts.RedisFansThreshold) {
-		return true, nil
-	}
-	// 2. add fans list to redis
-	for _, id := range ids {
-		if err := m.client.SAdd(c, uidStr, id).Err(); err != nil {
-			return false, err
-		}
-	}
-	if err := m.client.Expire(c, uidStr, consts.RedisExpireTime).Err(); err != nil {
+	_, err := pipeline.Exec(c)
+	if err != nil {
 		return false, err
 	}
 	return true, nil
@@ -65,50 +42,85 @@ func (m *Manager) AddFans(c context.Context, uid int64, ids []int64) (bool, erro
 
 // update redis when unfollow a user
 func (m *Manager) UnFollow(c context.Context, uid int64, tid int64) (bool, error) {
-	uidStr := strconv.FormatInt(uid, 10) + "_follow_list"
-	tidStr := strconv.FormatInt(tid, 10) + "_fans_list"
+	uidStr := "followList:" + strconv.FormatInt(uid, 10)
+	tidStr := "fansList:" + strconv.FormatInt(tid, 10)
+	pipeline := m.client.TxPipeline()
 	// 1. update uid's follow list
-	if cnt, _ := m.client.SCard(c, uidStr).Result(); cnt > 0 {
-		if err := m.client.SRem(c, uidStr, tid).Err(); err != nil {
-			return false, err
-		}
-		if err := m.client.Expire(c, uidStr, consts.RedisExpireTime).Err(); err != nil {
-			return false, err
-		}
+	if m.client.Exists(c, uidStr).Val() != 0 {
+		pipeline.SRem(c, uidStr, tid)
+		pipeline.Expire(c, uidStr, tools.RedisExpireTime())
 	}
 	// 2. update tid's fans list
-	if cnt, _ := m.client.SCard(c, tidStr).Result(); cnt > 0 {
-		if err := m.client.SRem(c, tidStr, uid).Err(); err != nil {
-			return false, err
-		}
-		if err := m.client.Expire(c, tidStr, consts.RedisExpireTime).Err(); err != nil {
-			return false, err
-		}
+	if m.client.Exists(c, tidStr).Val() != 0 {
+		pipeline.SRem(c, tidStr, uid)
+		pipeline.Expire(c, tidStr, tools.RedisExpireTime())
 	}
-	// 3. delete uid's relation list
-	uidStr = strconv.FormatInt(uid, 10) + "_relation_list"
-	if cnt, _ := m.client.SCard(c, uidStr).Result(); cnt > 0 {
-		m.client.SRem(c, uidStr, tid)
-		m.client.Expire(c, uidStr, consts.RedisExpireTime)
+	_, err := pipeline.Exec(c)
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }
 
-// query a relation
+func (m *Manager) SetFollow(c context.Context, uid int64, ids []int64) (bool, error) {
+	uidStr := "followList:" + strconv.FormatInt(uid, 10)
+
+	pipeline := m.client.TxPipeline()
+	for _, id := range ids {
+		pipeline.SAdd(c, uidStr, id)
+	}
+	pipeline.Expire(c, uidStr, tools.RedisExpireTime())
+	_, err := pipeline.Exec(c)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// update fans list to uid's fans list in redis using set
+func (m *Manager) SetFans(c context.Context, uid int64, ids []int64) (bool, error) {
+	uidStr := "fansList:" + strconv.FormatInt(uid, 10)
+	// 1. only add fans list to redis when the number of fans is greater than the threshold
+	if len(ids) < int(consts.RedisFansThreshold) {
+		return true, nil
+	}
+	// 2. add fans list to redis
+	pipeline := m.client.TxPipeline()
+	for _, id := range ids {
+		pipeline.SAdd(c, uidStr, id)
+	}
+	pipeline.Expire(c, uidStr, tools.RedisExpireTime())
+	_, err := pipeline.Exec(c)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// query uid whether follow tid
 func (m *Manager) QueryRelation(c context.Context, uid int64, tid int64) (bool, error) {
-	uidStr := strconv.FormatInt(uid, 10) + "_relation_list"
-	if cnt, _ := m.client.SCard(c, uidStr).Result(); cnt > 0 {
-		if ok, _ := m.client.SIsMember(c, uidStr, tid).Result(); ok {
-			m.client.Expire(c, uidStr, consts.RedisExpireTime)
+	// 检查uid的follow和tid的fans是否存在
+	uidStr := "followList:" + strconv.FormatInt(uid, 10)
+	tidStr := "fansList:" + strconv.FormatInt(tid, 10)
+	if m.client.Exists(c, uidStr).Val() != 0 {
+		if m.client.SIsMember(c, tidStr, tid).Val() {
 			return true, nil
 		}
 	}
-	return false, nil
+	if m.client.Exists(c, tidStr).Val() != 0 {
+		if m.client.SIsMember(c, uidStr, uid).Val() {
+			return true, nil
+		}
+	}
+	return false, errors.New("no key")
 }
 
 // query follow list
 func (m *Manager) QueryFollow(c context.Context, uid int64) ([]int64, error) {
-	uidStr := strconv.FormatInt(uid, 10) + "_follow_list"
+	uidStr := "followList:" + strconv.FormatInt(uid, 10)
+	if m.client.Exists(c, uidStr).Val() == 0 {
+		return nil, nil
+	}
 	ids, err := m.client.MGet(c, uidStr).Result()
 	if err != nil || len(ids)-1 == 0 {
 		return nil, err
@@ -124,7 +136,10 @@ func (m *Manager) QueryFollow(c context.Context, uid int64) ([]int64, error) {
 
 // query fans list
 func (m *Manager) QueryFans(c context.Context, uid int64) ([]int64, error) {
-	uidStr := strconv.FormatInt(uid, 10) + "_fans_list"
+	uidStr := "fansList:" + strconv.FormatInt(uid, 10)
+	if m.client.Exists(c, uidStr).Val() == 0 {
+		return nil, nil
+	}
 	ids, err := m.client.MGet(c, uidStr).Result()
 	if err != nil || len(ids)-1 == 0 {
 		return nil, err

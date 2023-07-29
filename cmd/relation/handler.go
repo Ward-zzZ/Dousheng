@@ -5,12 +5,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"tiktok-demo/cmd/relation/pkg/mq"
 	"tiktok-demo/cmd/relation/pkg/mysql"
 	"tiktok-demo/cmd/relation/pkg/pack"
-	"tiktok-demo/shared/consts"
+	// "tiktok-demo/shared/consts"
 	"tiktok-demo/shared/errno"
 	"tiktok-demo/shared/kitex_gen/MessageServer"
 	"tiktok-demo/shared/kitex_gen/RelationServer"
@@ -39,10 +38,10 @@ type MysqlManager interface {
 }
 
 type RedisManager interface {
-	AddRelation(c context.Context, uid int64, tid int64) (bool, error)
-	AddFollow(c context.Context, uid int64, ids []int64) (bool, error)
-	AddFans(c context.Context, uid int64, ids []int64) (bool, error)
+	AddFollow(c context.Context, uid int64, ids int64) (bool, error)
 	UnFollow(c context.Context, uid int64, tid int64) (bool, error)
+	SetFollow(c context.Context, uid int64, ids []int64) (bool, error)
+	SetFans(c context.Context, uid int64, ids []int64) (bool, error)
 	QueryRelation(c context.Context, uid int64, tid int64) (bool, error)
 	QueryFollow(c context.Context, uid int64) ([]int64, error)
 	QueryFans(c context.Context, uid int64) ([]int64, error)
@@ -69,7 +68,20 @@ func (s *RelationServiceImpl) RelationAction(ctx context.Context, req *RelationS
 	if req.UserId == req.ToUserId {
 		return resp, nil
 	}
-	// todo ：是否已经关注
+	isFollow, _ := s.QueryRelation(ctx, &RelationServer.DouyinQueryRelationRequest{
+		UserId:   req.UserId,
+		ToUserId: req.ToUserId,
+	})
+	if isFollow.BaseResp.StatusCode == errno.SuccessCode {
+		if isFollow.IsFollow && req.ActionType == 1 {
+			resp = pack.BuildrelationActionResp(errno.FollowActionErr.WithMessage("请勿重复关注"))
+			return resp, nil
+		}
+		if !isFollow.IsFollow && req.ActionType == 2 {
+			resp = pack.BuildrelationActionResp(errno.FollowActionErr.WithMessage("请勿重复取消关注"))
+			return resp, nil
+		}
+	}
 	// 2. action/undo action
 	// 2.1 First: rpc user service change follow count
 	UserRPCResp, _ := s.UserManager.ChangeUserFollowCount(ctx, &UserServer.DouyinChangeUserFollowRequest{
@@ -89,16 +101,11 @@ func (s *RelationServiceImpl) RelationAction(ctx context.Context, req *RelationS
 	msg.WriteString(":")
 	msg.WriteString(strconv.FormatInt(req.ToUserId, 10))
 	if req.ActionType == 1 {
-		// todo:延时双删
 		s.RedisManager.UnFollow(ctx, req.UserId, req.ToUserId)
 		err = mq.AddActor.Publish(ctx, msg.String())
-		time.Sleep(consts.SleepTime)
-		s.RedisManager.UnFollow(ctx, req.UserId, req.ToUserId)
 	} else {
 		s.RedisManager.UnFollow(ctx, req.UserId, req.ToUserId)
 		err = mq.DelActor.Publish(ctx, msg.String())
-		time.Sleep(consts.SleepTime)
-		s.RedisManager.UnFollow(ctx, req.UserId, req.ToUserId)
 	}
 	klog.Infof("RelationAction msg:%s", msg.String())
 	if err != nil {
@@ -125,7 +132,7 @@ func (s *RelationServiceImpl) MGetRelationFollowList(ctx context.Context, req *R
 			followIDs = append(followIDs, follow.ToUserID)
 		}
 		// update redis
-		if success, err := s.RedisManager.AddFollow(ctx, req.UserId, followIDs); !success || err != nil {
+		if success, err := s.RedisManager.SetFollow(ctx, req.UserId, followIDs); !success || err != nil {
 			klog.Errorf("Update %d Redis RelationFollowList redis err:%v", req.UserId, err)
 		}
 	} else {
@@ -177,7 +184,7 @@ func (s *RelationServiceImpl) MGetUserRelationFollowerList(ctx context.Context, 
 			followerIDs = append(followerIDs, follower.UserID)
 		}
 		// update redis
-		if success, err := s.RedisManager.AddFans(ctx, req.UserId, followerIDs); !success || err != nil {
+		if success, err := s.RedisManager.SetFans(ctx, req.UserId, followerIDs); !success || err != nil {
 			klog.Errorf("Update %d Redis RelationFollowerList redis err:%v", req.UserId, err)
 		}
 	} else {
@@ -190,8 +197,8 @@ func (s *RelationServiceImpl) MGetUserRelationFollowerList(ctx context.Context, 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	var UsersRPCResp *UserServer.DouyinMUserResponse
-	var followSet map[int64]struct{}
-	// 3.1 rpc user service get fans user info
+	followSet := make(map[int64]struct{})
+	// 粉丝的信息
 	go func() {
 		UsersRPCResp, err = s.UserManager.MGetUserInfo(ctx, &UserServer.DouyinMUserRequest{
 			UserId: followerIDs,
@@ -201,20 +208,16 @@ func (s *RelationServiceImpl) MGetUserRelationFollowerList(ctx context.Context, 
 		}
 		wg.Done()
 	}()
-	// 3.2 get follow set of uid from redis and mysql
+	// 当前用户关注的人，用于判断当前用户是否关注了这些粉丝
 	go func() {
-		var err error
-		follows, err := s.RedisManager.QueryFollow(ctx, req.UserId)
-		if err != nil {
-			klog.Errorf("Redis QueryFollow err:%v", err)
-			followSet, err = s.MysqlManager.GetFollowSet(req.UserId)
-			if err != nil {
-				klog.Errorf("Mysql GetFollowSet err:%v", err)
-			}
-		} else {
-			for _, follow := range follows {
-				followSet[follow] = struct{}{}
-			}
+		follows, _ := s.MGetRelationFollowList(ctx, &RelationServer.DouyinRelationFollowListRequest{
+			UserId: req.UserId,
+		})
+		if follows.BaseResp.StatusCode != 0 {
+			klog.Errorf("MGetRelationFollowList err:%v", follows.BaseResp.StatusMsg)
+		}
+		for _, follow := range follows.UserList {
+			followSet[follow.Id] = struct{}{}
 		}
 		wg.Done()
 	}()
@@ -243,35 +246,27 @@ func (s *RelationServiceImpl) QueryRelation(ctx context.Context, req *RelationSe
 		return pack.BuildrelationQueryResp(nil, true), nil
 	}
 
-	// 1. check relation redis
-	if isFollow, _ := s.RedisManager.QueryRelation(ctx, req.UserId, req.ToUserId); isFollow {
+	isFollow, err := s.RedisManager.QueryRelation(ctx, req.UserId, req.ToUserId)
+	if err == nil {
 		return pack.BuildrelationQueryResp(nil, isFollow), nil
 	}
 
-	// 2. check the follow set of userId in redis
-	ids, err := s.RedisManager.QueryFollow(ctx, req.UserId)
-	if err == nil && len(ids) > 0 {
-		for _, id := range ids {
-			if id == req.ToUserId {
-				s.RedisManager.AddRelation(ctx, req.UserId, req.ToUserId)
-				return pack.BuildrelationQueryResp(nil, true), nil
-			}
-		}
-		return pack.BuildrelationQueryResp(nil, false), nil
-	}
-
-	// 3. check relation mysql
+	// check relation mysql
 	follows, err := s.MysqlManager.GetFollowList(req.UserId)
 	if err != nil {
 		return pack.BuildrelationQueryResp(errno.QueryFollowErr, false), nil
 	}
+	followsIDs := make([]int64, 0)
 	for _, follow := range follows {
+		followsIDs = append(followsIDs, follow.ToUserID)
 		if follow.ToUserID == req.ToUserId {
-			s.RedisManager.AddRelation(ctx, req.UserId, req.ToUserId)
-			return pack.BuildrelationQueryResp(nil, true), nil
+			isFollow = true
 		}
 	}
-	return pack.BuildrelationQueryResp(nil, false), nil
+	if len(followsIDs) != 0 {
+		s.RedisManager.SetFollow(ctx, req.UserId, followsIDs)
+	}
+	return pack.BuildrelationQueryResp(nil, isFollow), nil
 }
 
 // MGetRelationFriendList implements the RelationServiceImpl interface.
