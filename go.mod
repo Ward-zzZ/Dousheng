@@ -3,6 +3,7 @@ module tiktok-demo
 go 1.20
 
 require (
+	github.com/Chain-Zhang/pinyin v0.1.3
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/bytedance/sonic v1.8.8
@@ -11,7 +12,7 @@ require (
 	github.com/cloudwego/kitex v0.6.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/golang/protobuf v1.5.3
+	github.com/h2non/filetype v1.1.3
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/hertz-contrib/cors v0.0.0-20230423034624-2bc83a8400f0
 	github.com/hertz-contrib/gzip v0.0.1
@@ -65,6 +66,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/pprof v0.0.0-20230509042627-b1315fad0c5a // indirect
 	github.com/google/uuid v1.3.0 // indirect

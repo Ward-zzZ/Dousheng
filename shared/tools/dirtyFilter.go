@@ -3,8 +3,10 @@ package tools
 import (
 	"bufio"
 	"fmt"
+	"github.com/Chain-Zhang/pinyin"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -71,7 +73,12 @@ func NewTrieTreeMather() *TrieTree {
 
 // Build 构造TrieTree树
 func (d *TrieTree) Build(words []string) {
+	pinyinContents := HansCovertPinyin(words)
 	for _, item := range words {
+		d.root.AddWord(item)
+	}
+	// 添加拼音敏感词
+	for _, item := range pinyinContents {
 		d.root.AddWord(item)
 	}
 }
@@ -169,6 +176,32 @@ func Filter(text string) string {
 	if DirtyMatchService.matcher.root == nil {
 		InitDirtyMatchService()
 	}
+	text = strings.ToLower(text)
+	text = strings.Replace(text, " ", "", -1) // 去除空格
+
+	// 过滤除中英文及数字以外的其他字符
+	otherCharReg := regexp.MustCompile("[^\u4e00-\u9fa5a-zA-Z0-9]")
+	text = otherCharReg.ReplaceAllString(text, "")
+
 	_, replaceText := DirtyMatchService.Match(text, '*')
 	return replaceText
+}
+
+// 中文汉字转拼音
+func HansCovertPinyin(contents []string) []string {
+	pinyinContents := make([]string, 0)
+	for _, content := range contents {
+		chineseReg := regexp.MustCompile("[\u4e00-\u9fa5]")
+		if !chineseReg.Match([]byte(content)) {
+			continue
+		}
+
+		// 只有中文才转
+		pin := pinyin.New(content)
+		pinStr, err := pin.Convert()
+		if err == nil {
+			pinyinContents = append(pinyinContents, pinStr)
+		}
+	}
+	return pinyinContents
 }

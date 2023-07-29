@@ -1,0 +1,219 @@
+{
+  "name": "api_srv",
+  "port": 8888,
+  "jwt": {
+    "secret_key": "tiktok-demo"
+  },
+  "otel": {
+    "endpoint": ":4317"
+  },
+  "user_srv":{
+    "name": "user_srv"
+  },
+  "relation_srv":{
+    "name": "relation_srv"
+  },
+  "favorite_srv":{
+    "name": "favorite_srv"
+  },
+  "video_srv":{
+    "name": "video_srv"
+  },
+  "comment_srv":{
+    "name": "comment_srv"
+  },
+"message_srv":{
+    "name": "message_srv"
+  }
+}
+
+
+{
+  "name": "comment_srv",
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "db": "tiktok"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6378,
+    "password": "tiktok123"
+  },
+  "rabbitmq": {
+    "host": "127.0.0.1",
+    "port": 5672,
+    "user": "tiktok",
+    "password": "123321"
+  },
+  "otel": {
+    "endpoint": ":4317"
+  },
+  "user_srv": {
+    "name": "user_srv"
+  }
+}
+
+
+{
+  "name": "favorite_srv",
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "db": "tiktok",
+    "salt": "tiktok123"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6378,
+    "password": "tiktok123"
+  },
+  "rabbitmq": {
+    "host": "127.0.0.1",
+    "port": 5672,
+    "user": "tiktok",
+    "password": "123321"
+  },
+  "otel": {
+    "endpoint": ":4317"
+  },
+  "video_srv": {
+    "name": "video_srv"
+  }
+}
+
+
+{
+  "name": "message_srv",
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "db": "tiktok"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6378,
+    "password": "tiktok123"
+  },
+  "msg_encrypt": {
+    "key": "ABCDABCDABCDABCD"
+  },
+  "otel": {
+    "endpoint": ":4317"
+  }
+}
+
+
+{
+  "name": "relation_srv",
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "db": "tiktok",
+    "salt": "tiktok123"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6378,
+    "password": "tiktok123"
+  },
+  "rabbitmq": {
+    "host": "127.0.0.1",
+    "port": 5672,
+    "user": "tiktok",
+    "password": "123321"
+  },
+  "otel": {
+    "endpoint": ":4317"
+  },
+  "user_srv": {
+    "name": "user_srv"
+  },
+  "msg_srv": {
+    "name": "message_srv"
+  }
+}
+
+
+{
+  "name": "user_srv",
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "db": "tiktok",
+    "salt": "tiktok123"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6378,
+    "password": "tiktok123"
+  },
+  "rabbitmq": {
+    "host": "127.0.0.1",
+    "port": 5672,
+    "user": "tiktok",
+    "password": "123321"
+  },
+  "otel": {
+    "endpoint": ":4317"
+  },
+  "relation_srv": {
+    "name": "relation_srv"
+  }
+}
+
+
+{
+  "name": "video_srv",
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "db": "tiktok"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6378,
+    "password": "tiktok123"
+  },
+  "rabbitmq": {
+    "host": "127.0.0.1",
+    "port": 5672,
+    "user": "tiktok",
+    "password": "123321"
+  },
+  "otel": {
+    "endpoint": ":4317"
+  },
+  "minio":{
+    "minio_url":"127.0.0.1",
+    "minio_port":"9000",
+    "access_key_id":"tiktok",
+    "secret_access_key":"12344321",
+    "video_bucket":"video",
+    "cover_bucket":"cover"
+  },
+  "user_srv": {
+    "name": "user_srv"
+  },
+  "favorite_srv": {
+    "name": "favorite_srv"
+  },
+  "comment_srv": {
+    "name": "comment_srv"
+  },
+   "relation_srv": {
+    "name": "relation_srv"
+   }
+}

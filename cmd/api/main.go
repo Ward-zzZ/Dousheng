@@ -15,6 +15,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/network/standard"
 
 	// "github.com/hertz-contrib/cors"
 	cfg "github.com/hertz-contrib/http2/config"
@@ -36,10 +37,11 @@ func main() {
 	// corsCfg := initialize.InitCors()
 	rpc.Init()
 	// create a new server
-	h := server.New(
+	h := server.Default(
 		tracer,
 		// server.WithALPN(true),
 		// server.WithTLS(tlsCfg),
+		server.WithTransport(standard.NewTransporter),
 		server.WithHostPorts(fmt.Sprintf(":%d", config.GlobalServerConfig.Port)),
 		server.WithRegistry(r, info),
 		server.WithHandleMethodNotAllowed(true),

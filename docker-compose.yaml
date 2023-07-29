@@ -72,6 +72,7 @@ services:
   mysql:
     image: mysql:latest
     volumes:
+      - ./data/data/mysql:/var/lib/mysql
       - ./data/configs/sql:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
@@ -92,30 +93,16 @@ services:
       - ./data/logs/redis:/logs
     command: redis-server --requirepass tiktok123
 
-  # minio:
-  #   image: minio/minio:latest
-  #   command: server --console-address ":9001" /data
-  #   volumes:
-  #     - ./data/configs/minio:/root/.minio
-  #     - ./data/data/minio:/data
-  #   environment:
-      # - MINIO_ACCESS_KEY=admin
-      # - MINIO_SECRET_KEY=admin123
-  #   ports:
-  #     - "9000:9000"
-  #     - "9001:9001"
-  #   restart: always
-
   # Consul
-  # consul:
-  #   image: consul:latest
-  #   command: agent -dev -client=0.0.0.0
-  #   ports:
-  #     - "8500:8500"
-  #     - "8300:8300"
-  #     - "8301:8301"
-  #     - "8302:8302"
-  #     - "8600:8600/udp"
+  consul:
+    image: consul:latest
+    command: agent -dev -client=0.0.0.0
+    ports:
+      - "8500:8500"
+      - "8300:8300"
+      - "8301:8301"
+      - "8302:8302"
+      - "8600:8600/udp"
 
   # RabbitMQ
   rabbitmq:
