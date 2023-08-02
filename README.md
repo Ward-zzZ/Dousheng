@@ -6,9 +6,9 @@
 
 **基于 Hertz HTTP框架 + Kitex 微服务框架实现的一个简易版抖音服务端**
 
-**项目具体接口文档：**​[简易版抖音项目方案说明](https://bytedance.feishu.cn/docs/doccnKrCsU5Iac6eftnFBdsXTof#)，[API文档](https://apifox.com/apidoc/shared-09d88f32-0b6c-4157-9d07-a36d32d7a75c/api-50707521)
+**项目具体接口文档**：[简易版抖音项目方案说明](https://bytedance.feishu.cn/docs/doccnKrCsU5Iac6eftnFBdsXTof#)，[API文档](https://apifox.com/apidoc/shared-09d88f32-0b6c-4157-9d07-a36d32d7a75c/api-50707521)
 
-**项目App端下载与使用说明：**​[客户端APP](https://bytedance.feishu.cn/docs/doccnM9KkBAdyDhg8qaeGlIz7S7)
+**项目App端下载与使用说明**：[客户端APP](https://bytedance.feishu.cn/docs/doccnM9KkBAdyDhg8qaeGlIz7S7)
 
 # 二、项目实现
 
@@ -226,9 +226,7 @@ List：key: user1_id&user2_id, Member: message_info_json
 
 4. **雪花算法生成用户和视频的主键Id**：确保 ID 是唯一的、全局的、递增的、可扩展的和高性能的。
 
-5. **用户内容检查：**基于前缀树实现评论内容和视频标题的敏感词过滤，维护友好的交流氛围。识别用户上传文件的MIME类型，判断是否是视频文件。不信任客户端发送的任何文件元数据，例如文件名，文件类型等。所有这些信息都在服务端进行重建。
-
-   整体效果还是挺不错的，但是一些谐音或者全部英文句子时有空格还是不能去除空格不然可能会存在误判还是不能检测出，要想充分的进行敏感词检测，首先要有完善的敏感词库，其次就是特殊情况特殊处理，最后就是先进行敏感词匹配然后再进行自然语言处理NLP完善，训练风控模型等检测效果才更只能。
+5. **用户内容检查**：基于前缀树实现评论内容和视频标题的敏感词过滤，维护友好的交流氛围。识别用户上传文件的MIME类型，判断是否是视频文件。不信任客户端发送的任何文件元数据，例如文件名，文件类型等。所有这些信息都在服务端进行重建。
 
    ![截屏2023-07-26 下午3.44.49](https://s2.loli.net/2023/08/03/AsUjkSKvZoYx9pL.png)​
 
@@ -250,19 +248,19 @@ List：key: user1_id&user2_id, Member: message_info_json
 
 1. **并行请求**：对于一些请求，比如查询用户信息，获取视频流等信息，需要调用多个RPC模块。这里采用了go协程同步进行，提高效率。
 2. **Redis事务管道传输：**
-3. **快速上传：**为了提高上传视频接口的响应速度，接口第一时间返回成功，然后使用两个协程，一个上传文件到minio，并通过channel通知另一个协程根据上传结果写入数据库。将接口耗时从原来串行的2s优化到100ms
+3. **快速上传**：为了提高上传视频接口的响应速度，接口第一时间返回成功，然后使用两个协程，一个上传文件到minio，并通过channel通知另一个协程根据上传结果写入数据库。将接口耗时从原来串行的2s优化到100ms
 4. **错误处理**：实现了完整的错误码（share/errno），对业务出现的错误进行分类和提示
 5. **Docker一键部署环境**：使用了Docker Compose对需要的环境进行部署，使得服务的管理更为简单便捷，并具有可移植性。
 
 # 三、快速部署
 
-1. **生成环境：**​`docker-compose up -d`​
+1. **生成环境**：`docker-compose up -d`
 
-2. **拉取依赖：**​`go mod tidy`​
+2. **拉取依赖**：`go mod tidy`
 
 3. **填写consul的K/V键值，模板在config.yaml**
 
-4. **启动服务：**
+4. **启动服务**：
 
    ```
    chmod +x start.sh
